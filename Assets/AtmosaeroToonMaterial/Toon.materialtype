@@ -1,12 +1,18 @@
 {
-    "description": "Cel Shading material with toon-style rendering",
+    "description": "Creates a flat, cartoon-like look with solid color bands and sharp outlines",
     "version": 3,
     "shaders": [
         {
-            "file": "./CelShadingOutline.shader"
+            "file": "./ToonOutline_Depth.shader"
         },
         {
-            "file": "./CelShading.shader"
+            "file": "./ToonOutline.shader"
+        },
+        {
+            "file": "./Toon.shader"
+        },
+		{
+            "file": "Shaders/Depth/DepthPass.shader"
         }
     ],
     "propertyLayout": {

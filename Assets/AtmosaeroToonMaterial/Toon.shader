@@ -1,5 +1,5 @@
 {
-    "Source": "CelShading.azsl",
+    "Source": "Toon.azsl",
 
     "RasterState": {
         "CullMode": "Back"

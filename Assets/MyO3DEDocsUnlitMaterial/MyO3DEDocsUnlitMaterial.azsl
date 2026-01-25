@@ -1,9 +1,11 @@
 #pragma once
 
+#include <Atom/Features/SrgSemantics.azsli>
 #include <viewsrg_all.srgi>
 #include <Atom/Features/PBR/DefaultObjectSrg.azsli>
+#include <Atom/RPI/ShaderResourceGroups/UnusedFallbackDrawSrg.azsli>
+#include <Atom/Features/InstancedTransforms.azsli>
 #include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
-#include <Atom/Features/SrgSemantics.azsli>
 
 ShaderResourceGroup UnlitColorSrg : SRG_PerMaterial
 {
@@ -22,11 +24,11 @@ struct VertexShaderOutput
     float4 m_position : SV_Position;
 };
 
-VertexShaderOutput MainVS(VertexShaderInput IN)
+VertexShaderOutput MainVS(VertexShaderInput IN, uint instanceId : SV_InstanceID)
 {
     VertexShaderOutput OUT;
 
-    float3 worldPosition = mul(ObjectSrg::GetWorldMatrix(), float4(IN.m_position, 1.0)).xyz;
+    float3 worldPosition = mul(GetObjectToWorldMatrix(instanceId), float4(IN.m_position, 1.0)).xyz;
     OUT.m_position = mul(ViewSrg::m_viewProjectionMatrix, float4(worldPosition, 1.0));
 
     return OUT;

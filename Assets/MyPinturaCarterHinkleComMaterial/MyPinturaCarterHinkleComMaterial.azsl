@@ -1,9 +1,11 @@
 #pragma once
 
+#include <Atom/Features/SrgSemantics.azsli>
 #include <viewsrg_all.srgi>
 #include <scenesrg_all.srgi>
 #include <Atom/Features/PBR/DefaultObjectSrg.azsli>
-#include <Atom/Features/SrgSemantics.azsli>
+#include <Atom/RPI/ShaderResourceGroups/UnusedFallbackDrawSrg.azsli>
+#include <Atom/Features/InstancedTransforms.azsli>
 
 ShaderResourceGroup MyPinturaCarterHinkleComMaterialSrg : SRG_PerMaterial
 {
@@ -31,11 +33,11 @@ struct PSOutput
     float4 m_specularColor : SV_Target1;
 };
 
-VSOutput MainVS(VSInput vsInput)
+VSOutput MainVS(VSInput vsInput, uint instanceId : SV_InstanceID)
 {
     VSOutput vsOutput;
 
-    float3 worldPosition = mul(ObjectSrg::GetWorldMatrix(), float4(vsInput.m_position, 1.0)).xyz;
+    float3 worldPosition = mul(GetObjectToWorldMatrix(instanceId), float4(vsInput.m_position, 1.0)).xyz;
     vsOutput.m_position = mul(ViewSrg::m_viewProjectionMatrix, float4(worldPosition, 1.0));
 
     vsOutput.m_uv = vsInput.m_uv;

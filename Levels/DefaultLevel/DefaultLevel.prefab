@@ -2495,9 +2495,9 @@
                                     "Value": {
                                         "MaterialAsset": {
                                             "assetId": {
-                                                "guid": "{ADB08087-99AC-5AE0-86A2-AC39007B02DC}"
+                                                "guid": "{56798788-FFB9-5229-91DA-AE513FBD3D5D}"
                                             },
-                                            "assetHint": "assets/atmosaerocelshadingmaterial/atmosaerocelshadingmaterial.azmaterial"
+                                            "assetHint": "assets/atmosaerotoonmaterial/atmosaerotoonmaterial.azmaterial"
                                         }
                                     }
                                 }
