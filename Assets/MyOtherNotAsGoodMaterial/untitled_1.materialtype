@@ -168,6 +168,7 @@
     },
     "lightingModel": "Standard",
     "materialShaderCode": "untitled_1_Common.azsli",
+    "materialShaderDefines": "untitled_1_Defines.azsli",
     "functors": [
         {
             "type": "Lua",

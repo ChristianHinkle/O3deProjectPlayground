@@ -16,20 +16,20 @@
 #endif
 
 #include <Atom/RPI/TangentSpace.azsli>
-#include <Atom/Features/InstancedTransforms.azsli>
 
 VsOutput EvaluateVertexGeometry_untitled(
+    const MaterialParameters params,
     float3 position,
     real3 normal,
     real4 tangent,
     float2 uv0,
     float2 uv1,
-    uint instanceId,
+    VsSystemValues SV,
     bool useVertexColor0,
     float4 color0)
 {
-    const float4x4 objectToWorld = GetObjectToWorldMatrix(instanceId);
-    const float3x3 objectToWorldIT = GetObjectToWorldMatrixInverseTranspose(instanceId);
+    const float4x4 objectToWorld = GetObjectToWorldMatrix(SV);
+    const float3x3 objectToWorldIT = GetObjectToWorldMatrixInverseTranspose(SV);
     const real4 positionWS = mul(objectToWorld, real4(position, 1.0));
     const real3 bitangent = cross(normal, (real3)tangent);
 
@@ -47,8 +47,8 @@ VsOutput EvaluateVertexGeometry_untitled(
     const float4 O3DE_MC_COLOR = color0;
     #define O3DE_MC_UV(index) (index == 0 ? uv0 : uv1);
 
-    // m_placeHolder keeps MaterialSrg from being compiled out when iterating on graphs
-    const bool placeHolder = MaterialSrg::m_placeHolder;
+    // placeholder to keep MaterialParams from being compiled out when iterating on graphs
+    const int materialType = params.m_materialType;
 
     // O3DE_GENERATED_INSTRUCTIONS_BEGIN: inPositionOffset
 float node4_time_outTime = SceneSrg::m_time;
@@ -72,12 +72,12 @@ float3 inPositionOffset = node26_multiply_outValue;
 
     VsOutput output;
     output.worldPosition = (float3)positionWS + (float3)inPositionOffset;
-    output.position = mul(ViewSrg::m_viewProjectionMatrix, float4(output.worldPosition, 1.0));
+    float4x4 viewProjectionMatrix = GetViewProjectionMatrix(SV);
+    output.position = mul(viewProjectionMatrix, float4(output.worldPosition, 1.0));
     output.uvs[0] = uv0;
     output.uvs[1] = uv1;
     output.normal = normal;
     output.tangent = tangent;
-    output.m_instanceId = instanceId;
 #if ENABLE_VERTEX_COLOR
     if(useVertexColor0)
     {
@@ -92,7 +92,7 @@ float3 inPositionOffset = node26_multiply_outValue;
     return output;
 }
 
-VsOutput EvaluateVertexGeometry_untitled(VsInput IN, VsSystemValues SV)
+VsOutput EvaluateVertexGeometry_untitled(VsInput IN, VsSystemValues SV, const MaterialParameters params)
 {
 #if ENABLE_VERTEX_COLOR
     float4 color0 = IN.m_optional_color0;
@@ -102,17 +102,19 @@ VsOutput EvaluateVertexGeometry_untitled(VsInput IN, VsSystemValues SV)
     bool useVertexColor = false;
 #endif
     return EvaluateVertexGeometry_untitled(
+        params,
         IN.position,
         real3(IN.normal),
         real4(IN.tangent),
         IN.uv0,
         IN.uv1,
-        SV.m_instanceId,
+        SV,
         useVertexColor,
         color0);
 }
 
 VsOutput EvaluateVertexGeometry_untitled(
+    const MaterialParameters params,
     float3 position,
     real3 normal,
     real4 tangent,
@@ -120,13 +122,16 @@ VsOutput EvaluateVertexGeometry_untitled(
     float2 uv1,
     uint instanceId)
 {
+    VsSystemValues SV;
+    SV.m_instanceId = instanceId;
     return EvaluateVertexGeometry_untitled(
+        params,
         position,
         normal,
         tangent,
         uv0,
         uv1,
-        instanceId,
+        SV,
         false,
         float4(1.0f, 1.0f, 1.0f, 1.0f));
 }
