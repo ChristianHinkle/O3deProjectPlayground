@@ -469,10 +469,10 @@
                         "Configuration": {
                             "CubemapAsset": {
                                 "assetId": {
-                                    "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                                    "guid": "{215E47FD-D181-5832-B1AB-91673ABF6399}",
                                     "subId": 1000
                                 },
-                                "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm.exr.streamingimage"
+                                "assetHint": "lightingpresets/highcontrast/goegap_4k_skyboxcm.exr.streamingimage"
                             }
                         }
                     }
@@ -488,36 +488,34 @@
                         "Configuration": {
                             "diffuseImageAsset": {
                                 "assetId": {
-                                    "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                                    "guid": "{3FD09945-D0F2-55C8-B9AF-B2FD421FE3BE}",
                                     "subId": 3000
                                 },
-                                "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm_ibldiffuse.exr.streamingimage"
+                                "assetHint": "lightingpresets/highcontrast/goegap_4k_iblglobalcm_ibldiffuse.exr.streamingimage"
                             },
                             "specularImageAsset": {
                                 "assetId": {
-                                    "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                                    "guid": "{3FD09945-D0F2-55C8-B9AF-B2FD421FE3BE}",
                                     "subId": 2000
                                 },
-                                "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm_iblspecular.exr.streamingimage"
-                            },
-                            "exposure": -2.0
+                                "assetHint": "lightingpresets/highcontrast/goegap_4k_iblglobalcm_iblspecular.exr.streamingimage"
+                            }
                         }
                     },
                     "diffuseImageAsset": {
                         "assetId": {
-                            "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                            "guid": "{3FD09945-D0F2-55C8-B9AF-B2FD421FE3BE}",
                             "subId": 3000
                         },
-                        "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm_ibldiffuse.exr.streamingimage"
+                        "assetHint": "lightingpresets/highcontrast/goegap_4k_iblglobalcm_ibldiffuse.exr.streamingimage"
                     },
                     "specularImageAsset": {
                         "assetId": {
-                            "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                            "guid": "{3FD09945-D0F2-55C8-B9AF-B2FD421FE3BE}",
                             "subId": 2000
                         },
-                        "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm_iblspecular.exr.streamingimage"
-                    },
-                    "exposure": -2.0
+                        "assetHint": "lightingpresets/highcontrast/goegap_4k_iblglobalcm_iblspecular.exr.streamingimage"
+                    }
                 },
                 "Component_[14994774102579326069]": {
                     "$type": "EditorDisabledCompositionComponent",
