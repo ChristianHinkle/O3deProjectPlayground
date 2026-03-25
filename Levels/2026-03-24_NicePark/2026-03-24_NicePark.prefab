@@ -17,7 +17,8 @@
                 "Child Entity Order": [
                     "Entity_[423767901064]",
                     "Entity_[503382925260]",
-                    "Entity_[1190577692620]"
+                    "Entity_[1190577692620]",
+                    "Entity_[797063919352]"
                 ]
             },
             "EditorInspectorComponent": {
@@ -262,6 +263,66 @@
                     "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
                     "Id": 14665887372834941983,
                     "Parent Entity": "ContainerEntity"
+                }
+            }
+        },
+        "Entity_[797063919352]": {
+            "Id": "Entity_[797063919352]",
+            "Name": "DirectionalLight",
+            "Components": {
+                "AZ::Render::EditorDirectionalLightComponent": {
+                    "$type": "AZ::Render::EditorDirectionalLightComponent",
+                    "Id": 11861217449740352939,
+                    "Controller": {
+                        "Configuration": {
+                            "Intensity": 1.0,
+                            "CameraEntityId": ""
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 8820519595679961237
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 17978897316284881041
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 17505141314403756256
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 5244912842721401813
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 14883114848722767554
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 2579750179409119737
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 12295529659808356882
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 4521899347741684950
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 13223978509653272783,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Rotate": [
+                            -75.0,
+                            0.0,
+                            -15.0
+                        ]
+                    }
                 }
             }
         }
