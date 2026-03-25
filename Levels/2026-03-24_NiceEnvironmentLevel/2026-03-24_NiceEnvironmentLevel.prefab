@@ -16,7 +16,6 @@
                 "Id": 1069995033707506449,
                 "Child Entity Order": [
                     "Entity_[423767901064]",
-                    "Entity_[361649004492]",
                     "Entity_[503382925260]",
                     "Entity_[1190577692620]"
                 ]
@@ -114,67 +113,6 @@
                 }
             }
         },
-        "Entity_[361649004492]": {
-            "Id": "Entity_[361649004492]",
-            "Name": "DirectionalLight",
-            "Components": {
-                "AZ::Render::EditorDirectionalLightComponent": {
-                    "$type": "AZ::Render::EditorDirectionalLightComponent",
-                    "Id": 14123806499819422718,
-                    "Controller": {
-                        "Configuration": {
-                            "Intensity": 1.0,
-                            "CameraEntityId": "",
-                            "ShadowFilterMethod": 1
-                        }
-                    }
-                },
-                "EditorDisabledCompositionComponent": {
-                    "$type": "EditorDisabledCompositionComponent",
-                    "Id": 1363150410447575265
-                },
-                "EditorEntityIconComponent": {
-                    "$type": "EditorEntityIconComponent",
-                    "Id": 15563145690920361449
-                },
-                "EditorEntitySortComponent": {
-                    "$type": "EditorEntitySortComponent",
-                    "Id": 6900221368902362460
-                },
-                "EditorInspectorComponent": {
-                    "$type": "EditorInspectorComponent",
-                    "Id": 7683605329399716560
-                },
-                "EditorLockComponent": {
-                    "$type": "EditorLockComponent",
-                    "Id": 8573246801922290758
-                },
-                "EditorOnlyEntityComponent": {
-                    "$type": "EditorOnlyEntityComponent",
-                    "Id": 1761270362443081708
-                },
-                "EditorPendingCompositionComponent": {
-                    "$type": "EditorPendingCompositionComponent",
-                    "Id": 12279158312438604340
-                },
-                "EditorVisibilityComponent": {
-                    "$type": "EditorVisibilityComponent",
-                    "Id": 16497118413204195090
-                },
-                "TransformComponent": {
-                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
-                    "Id": 9916050248321392709,
-                    "Parent Entity": "ContainerEntity",
-                    "Transform Data": {
-                        "Rotate": [
-                            -75.0,
-                            0.0,
-                            -15.0
-                        ]
-                    }
-                }
-            }
-        },
         "Entity_[423767901064]": {
             "Id": "Entity_[423767901064]",
             "Name": "Ground",
@@ -259,36 +197,34 @@
                         "Configuration": {
                             "diffuseImageAsset": {
                                 "assetId": {
-                                    "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                                    "guid": "{DA7369A0-9B7E-5796-98C9-B77302EFD26F}",
                                     "subId": 3000
                                 },
-                                "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm_ibldiffuse.exr.streamingimage"
+                                "assetHint": "lightingpresets/white_4x2_iblskyboxcm_ibldiffuse.exr.streamingimage"
                             },
                             "specularImageAsset": {
                                 "assetId": {
-                                    "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                                    "guid": "{DA7369A0-9B7E-5796-98C9-B77302EFD26F}",
                                     "subId": 2000
                                 },
-                                "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm_iblspecular.exr.streamingimage"
-                            },
-                            "exposure": -2.0
+                                "assetHint": "lightingpresets/white_4x2_iblskyboxcm_iblspecular.exr.streamingimage"
+                            }
                         }
                     },
                     "diffuseImageAsset": {
                         "assetId": {
-                            "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                            "guid": "{DA7369A0-9B7E-5796-98C9-B77302EFD26F}",
                             "subId": 3000
                         },
-                        "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm_ibldiffuse.exr.streamingimage"
+                        "assetHint": "lightingpresets/white_4x2_iblskyboxcm_ibldiffuse.exr.streamingimage"
                     },
                     "specularImageAsset": {
                         "assetId": {
-                            "guid": "{79F7D84F-5632-5FBC-B967-1DCBDF6B45BC}",
+                            "guid": "{DA7369A0-9B7E-5796-98C9-B77302EFD26F}",
                             "subId": 2000
                         },
-                        "assetHint": "assets/lightingpresets/niceskyhdri_iblskyboxcm_iblspecular.exr.streamingimage"
-                    },
-                    "exposure": -2.0
+                        "assetHint": "lightingpresets/white_4x2_iblskyboxcm_iblspecular.exr.streamingimage"
+                    }
                 },
                 "EditorDisabledCompositionComponent": {
                     "$type": "EditorDisabledCompositionComponent",
