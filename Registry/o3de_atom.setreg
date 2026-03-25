@@ -1,0 +1,16 @@
+{
+    "O3DE": {
+        "Atom": {
+            // [temporary] Disable RHI device validation to avoid engine's DX12 crash: https://github.com/o3de/o3de/issues/19042.
+            "rhi-device-validation": "disable",
+            "RHI": {
+                "FactoryManager": {
+                    // Use this to set the priority of RHIs to consider (e.g., "dx12" or "vulkan"). Note: It's important
+                    // to only configure this on a per-platform basis.
+                    "factoriesPriority": [
+                    ]
+                }
+            }
+        }
+    }
+}
