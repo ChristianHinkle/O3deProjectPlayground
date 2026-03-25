@@ -1,3 +1,3 @@
-[submodule "Dependencies/Gems/O3DEGemPlaygroundCH"]
-	path = Dependencies/Gems/O3DEGemPlaygroundCH
-	url = https://github.com/ChristianHinko/O3DEGemPlaygroundCH
+[submodule "Dependencies/Gems/O3deGemPlayground"]
+	path = Dependencies/Gems/O3deGemPlayground
+	url = https://github.com/ChristianHinkle/O3deGemPlayground
