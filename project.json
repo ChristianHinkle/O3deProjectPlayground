@@ -15,10 +15,10 @@
     "icon_path": "preview.png",
     "engine": "o3de",
     "external_subdirectories": [
-        "Dependencies/Gems/CppUtilsO3deGem",
-        "Dependencies/Gems/O3deGemPlayground",
-        "Dependencies/Gems/O3deUtils_Core",
-        "Dependencies/Gems/O3deUtils_Misc",
+        "Deps/CppUtilsO3deGem",
+        "Deps/O3deGemPlayground",
+        "Deps/O3deUtils_Core",
+        "Deps/O3deUtils_Misc",
         "Gem"
     ],
     "restricted": "O3deProjectPlayground",
