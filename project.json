@@ -15,7 +15,10 @@
     "icon_path": "preview.png",
     "engine": "o3de",
     "external_subdirectories": [
+        "Dependencies/Gems/CppUtilsO3deGem",
         "Dependencies/Gems/O3deGemPlayground",
+        "Dependencies/Gems/O3deUtils_Core",
+        "Dependencies/Gems/O3deUtils_Misc",
         "Gem"
     ],
     "restricted": "O3deProjectPlayground",
@@ -23,6 +26,7 @@
         "Atom",
         "AudioSystem",
         "CameraFramework",
+        "CppUtils",
         "DebugDraw",
         "DiffuseProbeGrid",
         "EMotionFX",
@@ -34,6 +38,8 @@
         "MiniAudio",
         "O3DEGemPlaygroundCH",
         "O3DEProjectPlaygroundCH",
+        "O3deUtils_Core",
+        "O3deUtils_Misc",
         "PhysX",
         "PrefabBuilder",
         "PrimitiveAssets",

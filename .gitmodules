@@ -1,3 +1,12 @@
 [submodule "Dependencies/Gems/O3deGemPlayground"]
 	path = Dependencies/Gems/O3deGemPlayground
 	url = https://github.com/ChristianHinkle/O3deGemPlayground
+[submodule "Dependencies/Gems/O3deUtils_Misc"]
+	path = Dependencies/Gems/O3deUtils_Misc
+	url = https://github.com/ChristianHinkle/O3deUtils_Misc.git
+[submodule "Dependencies/Gems/O3deUtils_Core"]
+	path = Dependencies/Gems/O3deUtils_Core
+	url = https://github.com/ChristianHinkle/O3deUtils_Core.git
+[submodule "Dependencies/Gems/CppUtilsO3deGem"]
+	path = Dependencies/Gems/CppUtilsO3deGem
+	url = https://github.com/ChristianHinkle/CppUtilsO3deGem.git
