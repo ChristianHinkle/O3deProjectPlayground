@@ -1,0 +1,37 @@
+{
+    "description": "Simple hand-written Lambert diffuse material with directional lights, point lights, spot lights, and IBL.",
+    "version": 2,
+    "propertyLayout": {
+        "groups": [
+            {
+                "id": "settings",
+                "displayName": "Settings"
+            }
+        ],
+        "properties": {
+            "settings": [
+                {
+                    "id": "baseColor",
+                    "displayName": "Base Color",
+                    "type": "Color",
+                    "defaultValue": [1.0, 1.0, 1.0],
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_baseColor"
+                    }
+                }
+            ]
+        }
+    },
+    "shaders": [
+        {
+            "file": "./MySimpleDiffuseMaterial.shader"
+        },
+        {
+            "file": "Shaders/Depth/DepthPass.shader"
+        },
+        {
+            "file": "Shaders/Shadow/Shadowmap.shader"
+        }
+    ]
+}

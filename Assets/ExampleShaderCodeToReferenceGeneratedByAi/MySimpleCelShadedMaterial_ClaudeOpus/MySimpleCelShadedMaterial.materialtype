@@ -1,0 +1,47 @@
+{
+    "description": "Simple cel-shaded material with 2-band lighting (lit/unlit).",
+    "version": 1,
+    "propertyLayout": {
+        "groups": [
+            {
+                "id": "settings",
+                "displayName": "Settings"
+            }
+        ],
+        "properties": {
+            "settings": [
+                {
+                    "id": "litColor",
+                    "displayName": "Lit Color",
+                    "type": "Color",
+                    "defaultValue": [1.0, 1.0, 1.0],
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_litColor"
+                    }
+                },
+                {
+                    "id": "unlitColor",
+                    "displayName": "Unlit Color",
+                    "type": "Color",
+                    "defaultValue": [0.15, 0.15, 0.15],
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_unlitColor"
+                    }
+                }
+            ]
+        }
+    },
+    "shaders": [
+        {
+            "file": "./MySimpleCelShadedMaterial.shader"
+        },
+        {
+            "file": "Shaders/Depth/DepthPass.shader"
+        },
+        {
+            "file": "Shaders/Shadow/Shadowmap.shader"
+        }
+    ]
+}

@@ -1,0 +1,141 @@
+#pragma once
+
+#include <scenesrg_all.srgi>
+#include <viewsrg_all.srgi>
+#include <Atom/Features/PBR/DefaultObjectSrg.azsli>
+#include <Atom/RPI/ShaderResourceGroups/UnusedFallbackDrawSrg.azsli>
+#include <Atom/Features/InstancedTransforms.azsli>
+#include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
+
+ShaderResourceGroup MySimpleCelShadedMaterialSrg : SRG_PerMaterial
+{
+    float3 m_litColor;
+    float3 m_unlitColor;
+}
+
+struct VSInput
+{
+    float3 m_position : POSITION;
+    float3 m_normal : NORMAL;
+};
+
+struct VSOutput
+{
+    float4 m_position : SV_Position;
+    float3 m_worldPosition : TEXCOORD0;
+    float3 m_worldNormal : TEXCOORD1;
+};
+
+// Utility: rotate a vector by a quaternion
+float3 RotateByQuaternion(float3 v, float4 q)
+{
+    return v + 2.0 * cross(cross(v, q.xyz) + q.w * v, q.xyz);
+}
+
+// Utility: convert world-space direction to O3DE cubemap coordinates
+float3 WorldToCubemapCoords(float3 dir)
+{
+    return float3(-dir.x, dir.z, -dir.y);
+}
+
+VSOutput MainVS(VSInput vsInput, uint instanceId : SV_InstanceID)
+{
+    VSOutput vsOutput;
+
+    float4x4 objectToWorld = GetObjectToWorldMatrix(instanceId);
+    float3 worldPosition = mul(objectToWorld, float4(vsInput.m_position, 1.0)).xyz;
+    vsOutput.m_position = mul(ViewSrg::m_viewProjectionMatrix, float4(worldPosition, 1.0));
+    vsOutput.m_worldPosition = worldPosition;
+
+    float3x3 objectToWorldIT = GetObjectToWorldMatrixInverseTranspose(instanceId);
+    vsOutput.m_worldNormal = normalize(mul(objectToWorldIT, vsInput.m_normal));
+
+    return vsOutput;
+}
+
+ForwardPassOutput MainPS(VSOutput psInput)
+{
+    ForwardPassOutput psOutput;
+
+    float3 normal = normalize(psInput.m_worldNormal);
+    float3 litColor = MySimpleCelShadedMaterialSrg::m_litColor;
+    float3 unlitColor = MySimpleCelShadedMaterialSrg::m_unlitColor;
+
+    // Accumulate a scalar light intensity from all sources, then step it into 2 bands.
+    float lightAmount = 0.0;
+
+    // --- Directional lights ---
+    for (int dirIdx = 0; dirIdx < SceneSrg::m_directionalLightCount; dirIdx++)
+    {
+        float3 dirToLight = normalize(-SceneSrg::m_directionalLights[dirIdx].m_direction);
+        float NdotL = saturate(dot(normal, dirToLight));
+        // Weight by perceived brightness of the light color
+        float intensity = dot(SceneSrg::m_directionalLights[dirIdx].m_rgbIntensityLux, float3(0.2126, 0.7152, 0.0722));
+        lightAmount += NdotL * intensity;
+    }
+
+    // --- Simple point lights (CPU-culled path) ---
+    for (uint ptIdx = 0; ptIdx < ViewSrg::m_simplePointLightCount; ptIdx++)
+    {
+        float3 lightPos = ViewSrg::m_simplePointLights[ptIdx].m_position;
+        float3 toLight = lightPos - psInput.m_worldPosition;
+        float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
+        float3 dirToLight = toLight * rsqrt(distSq);
+
+        float NdotL = saturate(dot(normal, dirToLight));
+
+        float invRadiusSq = ViewSrg::m_simplePointLights[ptIdx].m_invAttenuationRadiusSquared;
+        float falloff = distSq * invRadiusSq;
+        float radiusAttenuation = saturate(1.0 - falloff * falloff);
+        radiusAttenuation *= radiusAttenuation;
+
+        float intensity = dot(ViewSrg::m_simplePointLights[ptIdx].m_rgbIntensityCandelas, float3(0.2126, 0.7152, 0.0722));
+        lightAmount += NdotL * (intensity / distSq) * radiusAttenuation;
+    }
+
+    // --- Simple spot lights (CPU-culled path) ---
+    for (uint spIdx = 0; spIdx < ViewSrg::m_simpleSpotLightCount; spIdx++)
+    {
+        float3 lightPos = ViewSrg::m_simpleSpotLights[spIdx].m_position;
+        float3 toLight = lightPos - psInput.m_worldPosition;
+        float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
+        float3 dirToLight = toLight * rsqrt(distSq);
+
+        float NdotL = saturate(dot(normal, dirToLight));
+
+        float invRadiusSq = ViewSrg::m_simpleSpotLights[spIdx].m_invAttenuationRadiusSquared;
+        float falloff = distSq * invRadiusSq;
+        float radiusAttenuation = saturate(1.0 - falloff * falloff);
+        radiusAttenuation *= radiusAttenuation;
+
+        float cosAngle = dot(-dirToLight, normalize(ViewSrg::m_simpleSpotLights[spIdx].m_direction));
+        float cosOuter = ViewSrg::m_simpleSpotLights[spIdx].m_cosOuterConeAngle;
+        float cosInner = ViewSrg::m_simpleSpotLights[spIdx].m_cosInnerConeAngle;
+        float coneAttenuation = saturate((cosAngle - cosOuter) / max(cosInner - cosOuter, 0.001));
+
+        float intensity = dot(ViewSrg::m_simpleSpotLights[spIdx].m_rgbIntensityCandelas, float3(0.2126, 0.7152, 0.0722));
+        lightAmount += NdotL * (intensity / distSq) * radiusAttenuation * coneAttenuation;
+    }
+
+    // --- IBL diffuse ---
+    {
+        float3 irradianceDir = RotateByQuaternion(normal, SceneSrg::m_iblOrientation);
+        float3 iblSample = SceneSrg::m_diffuseEnvMap.Sample(SceneSrg::m_samplerEnv, WorldToCubemapCoords(irradianceDir)).rgb;
+        float iblExposure = pow(2.0, SceneSrg::m_iblExposure);
+        float iblLuminance = dot(iblSample, float3(0.2126, 0.7152, 0.0722)) * iblExposure;
+        lightAmount += iblLuminance;
+    }
+
+    // --- Cel shading: 2 discrete bands ---
+    // step() gives 0.0 when lightAmount < 0.5, 1.0 when >= 0.5
+    float band = step(0.5, lightAmount);
+    float3 color = lerp(unlitColor, litColor, band);
+
+    psOutput.m_diffuseColor = float4(color, 1.0);
+    psOutput.m_specularColor = float4(0.0, 0.0, 0.0, 1.0);
+    psOutput.m_albedo = float4(litColor, 1.0);
+    psOutput.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);
+    psOutput.m_normal = float4(0.0, 0.0, 0.0, 0.0);
+
+    return psOutput;
+}
