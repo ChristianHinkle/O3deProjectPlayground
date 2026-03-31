@@ -285,6 +285,105 @@ Since our forward pass *already* applies IBL, you could get double-brightness in
 - Remove the IBL section from your forward pass and let the composite pass handle all ambient
 - Or keep it and accept that the two systems overlap slightly (this is what the engine's own shaders do)
 
+## Approaches to Custom Lighting in Forward+ Rendering
+
+There are three broad strategies for implementing non-standard shading models. Each trades off artistic control against maintenance burden and future-proofing. Understanding these tradeoffs is important because O3DE's forward+ pipeline is one of the main reasons to use this engine for NPR work.
+
+### Approach A: Custom Light Loops (What Our Shaders Do)
+
+You read light data directly from the SRGs and write your own shading math per light type.
+
+**What you can do:**
+- Complete per-light control. Each light type can use a different shading model. A directional light could use smooth gradients while point lights use hard cel-shading bands.
+- Artistic attenuation curves that aren't physically based. You could make a point light fall off linearly, or use a custom easing function.
+- Per-light color remapping, hue shifting, or artistic adjustments that depend on the angle, distance, or light color.
+- Light-type-specific effects: e.g., only directional lights cast hatching lines, only point lights produce rim highlights.
+- You decide exactly what math runs. Nothing is hidden.
+
+**What you give up:**
+- You must explicitly handle each light type. O3DE currently has 8: DirectionalLight, SimplePointLight, SimpleSpotLight, PointLight (Sphere), DiskLight (SpotDisk), CapsuleLight, QuadLight, PolygonLight. Our shaders currently handle 5 of these and miss capsule, quad, and polygon lights.
+- If the engine adds a new light type (or a new rendering feature like shadow maps), your shader won't support it until you manually implement it.
+- You're reimplementing attenuation math, cone falloff, etc. that the engine already has. The math is identical -- it's pure code duplication.
+- No shadow support unless you also manually include and call the engine's shadow sampling functions.
+
+**Best for:** Shaders where the artistic look requires per-light decisions. Cel-shading with per-light-type behavior, hatching/crosshatching, painterly styles where different light sources should produce visually distinct effects.
+
+### Approach B: Engine Pipeline with Post-Processing (Stylize the Result)
+
+You populate the engine's `Surface` struct, call its lighting evaluation, and get back a `LightingData` result with fully computed diffuse/specular. Then you stylize that aggregate result.
+
+**What you can do:**
+- Automatically supports ALL light types (all 8 current types, plus any future ones).
+- Automatically gets shadows, transmission, light culling, energy conservation -- everything the engine computes.
+- Future-proof: when the engine adds a new light type or rendering feature, your shader picks it up for free.
+- No duplicated attenuation/falloff math.
+- Still gives you control over the final look: you can quantize the diffuse into bands, remap colors, apply artistic curves to the aggregate lighting.
+
+**What you give up:**
+- You cannot distinguish which light contributed what. The diffuse result is a single `float3` that is the sum of all lights multiplied by albedo. You can convert it to luminance and step/quantize that, but you cannot say "make this point light hard-edged and that directional light soft."
+- You lose the per-light artistic decisions that make Approach A powerful. Every light goes through the same PBR math first, and you only get to modify the combined output.
+- This is essentially: realistic lighting in, stylized lighting out. If the realistic base doesn't capture the artistic direction you want, you're stuck.
+
+**Best for:** Styles where the aggregate lighting matters more than individual light behavior. Simple cel-shading (just quantize total brightness), tinted shadows, color grading that depends on light intensity, or when you want a material that looks "almost PBR but with a twist."
+
+### Approach C: Deferred Rendering (What Unreal Engine Does)
+
+The geometry pass outputs surface properties (albedo, normal, roughness, metallic) to a G-buffer. A separate fullscreen pass computes lighting for all pixels using those properties.
+
+**What you can do:**
+- Extremely efficient for many lights (lighting is computed in screen-space, cost is per-pixel not per-object-per-light).
+- The lighting pass can be highly optimized since it runs once for all geometry.
+
+**What you give up:**
+- **All per-material lighting control.** Every material uses the same lighting equation because lighting is computed after the geometry pass. A cel-shaded material and a realistic material cannot coexist in the same scene (without workarounds like custom stencil masks or hybrid rendering).
+- NPR is fundamentally difficult. You can't make one object respond to light differently from another because the lighting pass has no concept of "which material is this pixel."
+- Transparency and alpha blending require a separate forward pass anyway, partially negating the deferred benefit.
+- G-buffer bandwidth is high (4-5 render targets of surface data).
+
+**Best for:** Photorealistic rendering with many lights. Not suitable for per-material NPR unless supplemented with forward passes.
+
+### Comparison Table
+
+| | A: Custom Light Loops | B: Post-Process Pipeline | C: Deferred |
+|---|---|---|---|
+| Per-light artistic control | Full | None | None |
+| Per-material shading model | Yes | Partial (output only) | No |
+| Supports all light types automatically | No (manual) | Yes | Yes |
+| Future-proof for new light types | No | Yes | Yes |
+| Shadow support | Manual | Automatic | Automatic |
+| Code duplication with engine | High | None | N/A |
+| Maintenance burden | High | Low | Low |
+| NPR suitability | Excellent | Good | Poor |
+
+### Why This Matters for O3DE Specifically
+
+O3DE uses forward+ rendering by default. This is the pipeline where each material's pixel shader runs with access to all light data. This is precisely what makes Approach A possible and powerful -- your pixel shader gets to decide how every light affects every pixel. A deferred renderer like Unreal's cannot offer this because lighting happens in a separate pass with no knowledge of the original material.
+
+Approach B is a valid middle ground, but it does reduce the forward+ advantage. If all you're doing is computing standard PBR and then quantizing the result, you could achieve nearly the same thing in a deferred engine by post-processing the lighting buffer. You're not fully leveraging the per-material-per-light access that forward+ provides.
+
+The sweet spot depends on how much per-light control your art direction actually needs. If you just want "2-band cel shading that works with all lights," Approach B is pragmatic and future-proof. If you want "directional lights cast hatching, point lights cast hard-edged pools of light, and spot lights produce color-shifted rim highlights," only Approach A can do that.
+
+### The Engine's Own Customization Hook (A Middle Ground)
+
+The engine provides a designed customization point that sits between A and B. Every light type's utility class is wrapped in a `#ifndef` guard:
+
+```hlsl
+// In SimplePointLight.azsli:
+#ifndef SimplePointLightUtil
+#define SimplePointLightUtil SimplePointLightUtil_PBR
+#endif
+```
+
+This means you can define your own `SimplePointLightUtil` class *before* including the engine's light files, and the engine will use yours instead of the PBR default. The engine even provides `LightUtilTemplate.azsli` as a starting point for this.
+
+With this approach you can:
+- Override the `Apply()` method for specific light types with your own shading math
+- Delegate to the base PBR class for Init/GetFalloff/GetSurfaceToLightDirection (reuse the attenuation math)
+- Only customize the final diffuse/specular calculation
+- Leave light types you don't care about customizing on their PBR defaults
+
+This gives per-light-type control (like A) while reusing the engine's infrastructure (like B), but it does require defining a custom util class for each light type you want to override. New light types added by the engine would fall back to PBR defaults until you write a custom util for them -- which is arguably the right behavior (new lights work, just with standard shading, until you decide to stylize them).
+
 ### Making Your Own Material Emissive
 
 If you want your custom material to *be* emissive (so it lights other things via the probe grid), add an emissive term to your forward pass output. The ray tracing pass samples whatever color your surface outputs:
