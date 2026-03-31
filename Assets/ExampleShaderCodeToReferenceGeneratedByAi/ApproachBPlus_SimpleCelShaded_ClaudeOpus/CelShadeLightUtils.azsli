@@ -1,0 +1,192 @@
+// Custom LightUtil overrides for cel-shaded lighting.
+// Each light type uses a 2-band step function instead of smooth Lambert diffuse.
+// Self-contained implementations that compute the same attenuation as the engine's
+// PBR utils but replace the diffuse shading with cel-shading.
+//
+// PREREQUISITES: Surface and LightingData must be defined before including this file.
+//
+// Include this file BEFORE including StandardLighting.azsli.
+
+#pragma once
+
+#include <Atom/Features/PBR/Lights/LightStructures.azsli>
+
+// Our custom cel-shaded diffuse function — shared by all light types.
+// Converts smooth NdotL into a hard 2-band step: lit or unlit.
+// To add more bands, replace step() with a multi-step or smoothstep chain.
+real3 CelShadeDiffuse(Surface surface, real3 dirToLight, real3 lightIntensity)
+{
+    real NdotL = saturate(dot(surface.GetDiffuseNormal(), dirToLight));
+    real celFactor = step(0.5, NdotL);
+    return surface.albedo * celFactor * lightIntensity;
+}
+
+// --- DirectionalLight ---
+#define DirectionalLightUtil DirectionalLightUtil_CelShade
+class DirectionalLightUtil_CelShade
+{
+    static DirectionalLightUtil_CelShade Init(DirectionalLight light, Surface surface)
+    {
+        DirectionalLightUtil_CelShade result;
+        return result;
+    }
+
+    void Apply(DirectionalLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real3 dirToLight = normalize(real3(-light.m_direction));
+        lightingData.diffuseLighting += CelShadeDiffuse(surface, dirToLight, real3(light.m_rgbIntensityLux)) * litRatio;
+    }
+};
+
+// --- SimplePointLight ---
+#define SimplePointLightUtil SimplePointLightUtil_CelShade
+class SimplePointLightUtil_CelShade
+{
+    real3 m_surfaceToLightDirection;
+    real  m_lightDistanceSquared;
+    real  m_falloff;
+
+    static SimplePointLightUtil_CelShade Init(SimplePointLight light, Surface surface)
+    {
+        SimplePointLightUtil_CelShade result;
+        real3 posToLight = real3(light.m_position - surface.position);
+        result.m_lightDistanceSquared = dot(posToLight, posToLight);
+        result.m_falloff = result.m_lightDistanceSquared * real(light.m_invAttenuationRadiusSquared);
+        result.m_surfaceToLightDirection = normalize(posToLight);
+        return result;
+    }
+
+    real3 GetSurfaceToLightDirection() { return m_surfaceToLightDirection; }
+    real GetFalloff() { return m_falloff; }
+
+    void Apply(SimplePointLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
+        radiusAttenuation = radiusAttenuation * radiusAttenuation;
+        real distSq = max(0.001 * 0.001, m_lightDistanceSquared);
+        real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation;
+
+        lightingData.diffuseLighting += CelShadeDiffuse(surface, m_surfaceToLightDirection, lightIntensity) * litRatio;
+    }
+};
+
+// --- SimpleSpotLight ---
+#define SimpleSpotLightUtil SimpleSpotLightUtil_CelShade
+class SimpleSpotLightUtil_CelShade
+{
+    real3 m_surfaceToLightDirection;
+    real  m_lightDistanceSquared;
+    real  m_falloff;
+    real  m_angleFalloff;
+
+    static SimpleSpotLightUtil_CelShade Init(SimpleSpotLight light, Surface surface)
+    {
+        SimpleSpotLightUtil_CelShade result;
+        real3 posToLight = real3(light.m_position - surface.position);
+        result.m_lightDistanceSquared = dot(posToLight, posToLight);
+        result.m_falloff = result.m_lightDistanceSquared * real(light.m_invAttenuationRadiusSquared);
+        result.m_surfaceToLightDirection = normalize(posToLight);
+
+        real cosAngle = dot(-result.m_surfaceToLightDirection, normalize(real3(light.m_direction)));
+        result.m_angleFalloff = saturate((cosAngle - real(light.m_cosOuterConeAngle)) /
+            max(real(light.m_cosInnerConeAngle) - real(light.m_cosOuterConeAngle), 0.001));
+        return result;
+    }
+
+    real3 GetSurfaceToLightDirection() { return m_surfaceToLightDirection; }
+    real GetFalloff() { return m_falloff; }
+
+    void Apply(SimpleSpotLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
+        radiusAttenuation = radiusAttenuation * radiusAttenuation;
+        real distSq = max(0.001 * 0.001, m_lightDistanceSquared);
+        real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation * m_angleFalloff;
+
+        lightingData.diffuseLighting += CelShadeDiffuse(surface, m_surfaceToLightDirection, lightIntensity) * litRatio;
+    }
+};
+
+// --- PointLight (Sphere area light) ---
+#define PointLightUtil PointLightUtil_CelShade
+class PointLightUtil_CelShade
+{
+    real3 m_surfaceToLightDirection;
+    real  m_lightDistanceSquared;
+    real  m_falloff;
+
+    static PointLightUtil_CelShade Init(PointLight light, Surface surface)
+    {
+        PointLightUtil_CelShade result;
+        real3 posToLight = real3(light.m_position) - real3(surface.position);
+        result.m_lightDistanceSquared = dot(posToLight, posToLight);
+        result.m_falloff = result.m_lightDistanceSquared * real(light.m_invAttenuationRadiusSquared);
+        result.m_surfaceToLightDirection = normalize(posToLight);
+        return result;
+    }
+
+    real3 GetSurfaceToLightDirection() { return m_surfaceToLightDirection; }
+    real GetFalloff() { return m_falloff; }
+
+    void Apply(PointLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
+        radiusAttenuation = radiusAttenuation * radiusAttenuation;
+        real distSq = max(0.001 * 0.001, m_lightDistanceSquared);
+        real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation;
+
+        lightingData.diffuseLighting += CelShadeDiffuse(surface, m_surfaceToLightDirection, lightIntensity) * litRatio;
+    }
+
+    void ApplySampled(PointLight light, Surface surface, inout LightingData lightingData, const uint sampleCount = 512)
+    {
+        Apply(light, surface, 1.0, lightingData);
+    }
+};
+
+// --- DiskLight (SpotDisk area light) ---
+#define DiskLightUtil DiskLightUtil_CelShade
+class DiskLightUtil_CelShade
+{
+    real3 m_posToLightDir;
+    real3 m_dirToConeTip;
+    real  m_lightDistanceSquared;
+    real  m_falloff;
+    real  m_angleFalloff;
+
+    static DiskLightUtil_CelShade Init(DiskLight light, Surface surface)
+    {
+        DiskLightUtil_CelShade result;
+        real3 posToLight = real3(light.m_position) - real3(surface.position);
+        result.m_lightDistanceSquared = dot(posToLight, posToLight);
+        result.m_falloff = result.m_lightDistanceSquared * real(light.m_invAttenuationRadiusSquared);
+        result.m_posToLightDir = normalize(posToLight);
+        result.m_angleFalloff = dot(result.m_posToLightDir, real3(-light.m_direction));
+
+        float3 coneTipPosition = light.m_position + light.m_bulbPositionOffset * -light.m_direction;
+        result.m_dirToConeTip = normalize(real3(coneTipPosition) - real3(surface.position));
+        return result;
+    }
+
+    real3 GetSurfaceToLightDirection() { return m_posToLightDir; }
+    real3 GetDirectionToConeTip() { return m_dirToConeTip; }
+    real GetFalloff() { return m_falloff; }
+
+    void Apply(DiskLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
+        radiusAttenuation = radiusAttenuation * radiusAttenuation;
+        real distSq = max(0.001 * 0.001, m_lightDistanceSquared);
+        real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation * max(m_angleFalloff, 0.0);
+
+        lightingData.diffuseLighting += CelShadeDiffuse(surface, m_posToLightDir, lightIntensity) * litRatio;
+    }
+
+    void ApplySampled(DiskLight light, Surface surface, inout LightingData lightingData, const uint sampleCount = 512)
+    {
+        Apply(light, surface, 1.0, lightingData);
+    }
+};
+
+// CapsuleLight, QuadLight, PolygonLight are NOT overridden.
+// They fall back to their PBR defaults automatically.

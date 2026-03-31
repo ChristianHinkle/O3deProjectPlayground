@@ -1,0 +1,119 @@
+#pragma once
+
+// Approach B+: Use the engine's lighting pipeline with custom LightUtil overrides.
+// The custom util classes replace the PBR diffuse calculation while reusing the
+// engine's attenuation, light culling, and pipeline infrastructure.
+// Capsule, quad, and polygon lights fall back to PBR defaults automatically.
+
+#define FORCE_OPAQUE 1
+
+#include <scenesrg_all.srgi>
+#include <viewsrg_all.srgi>
+#include <Atom/Features/PBR/DefaultObjectSrg.azsli>
+#include <Atom/RPI/ShaderResourceGroups/DefaultDrawSrg.azsli>
+#include <Atom/Features/InstancedTransforms.azsli>
+#include <Atom/Features/Pipeline/Forward/ForwardPassSrg.azsli>
+#include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
+#include <Atom/Features/SrgSemantics.azsli>
+
+// --- Prerequisites: Surface, LightingData, and BRDF must be defined before custom utils ---
+#include <Atom/Features/PBR/LightingOptions.azsli>
+#include <Atom/Features/PBR/Lighting/LightingData.azsli>
+#include <Atom/Features/PBR/Surfaces/StandardSurface.azsli>
+#include <Atom/Features/PBR/LightingUtils.azsli>
+#include <Atom/Features/PBR/Microfacet/Brdf.azsli>
+#include <Atom/Features/SampleBrdfMap.azsli>
+#include <Atom/Features/GoboTexture.azsli>
+
+// --- Custom LightUtil overrides (uses Surface/LightingData, defines #define macros) ---
+#include "CustomDiffuseLightUtils.azsli"
+
+// --- StandardLighting: prereqs skipped via #pragma once, defines GetDiffuse/GetSpecular, includes light loops ---
+#include <Atom/Features/PBR/Lighting/StandardLighting.azsli>
+#include <Atom/Features/PBR/Lights/IblForward.azsli>
+#include <Atom/Features/PBR/Decals.azsli>
+
+ShaderResourceGroup MaterialSrg : SRG_PerMaterial
+{
+    float3 m_baseColor;
+}
+
+struct VSInput
+{
+    float3 m_position : POSITION;
+    float3 m_normal : NORMAL;
+    float4 m_tangent : TANGENT;
+};
+
+struct VSOutput
+{
+    precise linear centroid float4 m_position : SV_Position;
+    float3 m_normal : NORMAL;
+    float4 m_tangent : TANGENT;
+    float3 m_worldPosition : UV0;
+    uint m_instanceId : SV_InstanceID;
+};
+
+VSOutput MainVS(VSInput IN, uint instanceId : SV_InstanceID)
+{
+    VSOutput OUT;
+    OUT.m_instanceId = instanceId;
+
+    float3 worldPosition = mul(GetObjectToWorldMatrix(instanceId), float4(IN.m_position, 1.0)).xyz;
+    OUT.m_worldPosition = worldPosition;
+    OUT.m_position = mul(ViewSrg::m_viewProjectionMatrix, float4(worldPosition, 1.0));
+    OUT.m_normal = IN.m_normal;
+    OUT.m_tangent = IN.m_tangent;
+
+    return OUT;
+}
+
+ForwardPassOutput MainPS(VSOutput IN)
+{
+    real4x4 objectToWorld = real4x4(GetObjectToWorldMatrix(IN.m_instanceId));
+    real3x3 objectToWorldIT = real3x3(GetObjectToWorldMatrixInverseTranspose(IN.m_instanceId));
+
+    float3 normalWS, tangentWS, bitangentWS;
+    ConstructTBN(real3(IN.m_normal), real4(IN.m_tangent), objectToWorld, objectToWorldIT, normalWS, tangentWS, bitangentWS);
+
+    // --- Surface ---
+    Surface surface;
+    surface.position = IN.m_worldPosition.xyz;
+    surface.normal = normalWS;
+    surface.vertexNormal = normalWS;
+    surface.roughnessLinear = 1.0;
+    surface.CalculateRoughnessA();
+    surface.SetAlbedoAndSpecularF0(MaterialSrg::m_baseColor, 0.0, 0.0);
+    surface.clearCoat.InitializeToZero();
+
+    // --- Light culling ---
+    LightCullingTileIterator tileIterator;
+    tileIterator.Init(IN.m_position, PassSrg::m_lightListRemapped, PassSrg::m_tileLightData);
+
+    // --- LightingData ---
+    float3 views[MAX_SHADING_VIEWS];
+    views[0] = ViewSrg::m_worldPosition.xyz;
+
+    LightingData lightingData;
+    lightingData.Init(surface.position, surface.normal, surface.roughnessLinear, views);
+    lightingData.specularResponse = FresnelSchlickWithRoughness(lightingData.GetSpecularNdotV(), surface.specularF0, surface.roughnessLinear);
+    lightingData.diffuseResponse = 1.0f - lightingData.specularResponse;
+
+    // --- Lighting (uses our CustomDiffuse function via the overridden LightUtils) ---
+    ApplyDecals(tileIterator, surface);
+    ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
+    ApplyIblForward(surface, lightingData);
+    lightingData.FinalizeLighting();
+
+    PbrLightingOutput lightingOutput = GetPbrLightingOutput(surface, lightingData, 1.0);
+
+    // --- Output ---
+    ForwardPassOutput OUT;
+    OUT.m_diffuseColor = lightingOutput.m_diffuseColor;
+    OUT.m_diffuseColor.w = -1;
+    OUT.m_specularColor = lightingOutput.m_specularColor;
+    OUT.m_specularF0 = lightingOutput.m_specularF0;
+    OUT.m_albedo = lightingOutput.m_albedo;
+    OUT.m_normal = lightingOutput.m_normal;
+    return OUT;
+}

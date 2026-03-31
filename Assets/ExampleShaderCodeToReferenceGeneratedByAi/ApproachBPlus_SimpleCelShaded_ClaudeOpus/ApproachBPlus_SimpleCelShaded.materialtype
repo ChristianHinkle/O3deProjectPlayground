@@ -1,0 +1,47 @@
+{
+    "description": "Approach B+: Cel-shading via LightUtil overrides. Per-light cel-shading with engine pipeline fallback for unoverridden light types.",
+    "version": 1,
+    "propertyLayout": {
+        "groups": [
+            {
+                "id": "settings",
+                "displayName": "Settings"
+            }
+        ],
+        "properties": {
+            "settings": [
+                {
+                    "id": "litColor",
+                    "displayName": "Lit Color",
+                    "type": "Color",
+                    "defaultValue": [1.0, 1.0, 1.0],
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_litColor"
+                    }
+                },
+                {
+                    "id": "unlitColor",
+                    "displayName": "Unlit Color",
+                    "type": "Color",
+                    "defaultValue": [0.15, 0.15, 0.15],
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_unlitColor"
+                    }
+                }
+            ]
+        }
+    },
+    "shaders": [
+        {
+            "file": "./ApproachBPlus_SimpleCelShaded.shader"
+        },
+        {
+            "file": "Shaders/Depth/DepthPass.shader"
+        },
+        {
+            "file": "Shaders/Shadow/Shadowmap.shader"
+        }
+    ]
+}

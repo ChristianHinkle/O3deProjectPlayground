@@ -1,0 +1,8 @@
+{
+    "materialType": "ApproachBPlus_SimpleCelShaded.materialtype",
+    "materialTypeVersion": 1,
+    "propertyValues": {
+        "settings.litColor": [1.0, 1.0, 1.0],
+        "settings.unlitColor": [0.15, 0.15, 0.15]
+    }
+}

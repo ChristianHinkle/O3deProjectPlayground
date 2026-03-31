@@ -1,0 +1,113 @@
+#pragma once
+
+// Approach B: Use the engine's full lighting pipeline, then stylize the aggregate result.
+// Supports ALL light types, shadows, decals, IBL, and future engine additions automatically.
+// The cel-shading is applied as a post-process: compute standard PBR diffuse, convert to
+// luminance, step into 2 bands, then output lit/unlit colors.
+
+#define FORCE_OPAQUE 1
+
+#include <scenesrg_all.srgi>
+#include <viewsrg_all.srgi>
+#include <Atom/Features/PBR/DefaultObjectSrg.azsli>
+#include <Atom/RPI/ShaderResourceGroups/DefaultDrawSrg.azsli>
+#include <Atom/Features/InstancedTransforms.azsli>
+#include <Atom/Features/Pipeline/Forward/ForwardPassSrg.azsli>
+#include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
+#include <Atom/Features/SrgSemantics.azsli>
+#include <Atom/Features/PBR/Lighting/StandardLighting.azsli>
+#include <Atom/Features/PBR/Lights/IblForward.azsli>
+#include <Atom/Features/PBR/Decals.azsli>
+
+ShaderResourceGroup MaterialSrg : SRG_PerMaterial
+{
+    float3 m_litColor;
+    float3 m_unlitColor;
+}
+
+struct VSInput
+{
+    float3 m_position : POSITION;
+    float3 m_normal : NORMAL;
+    float4 m_tangent : TANGENT;
+};
+
+struct VSOutput
+{
+    precise linear centroid float4 m_position : SV_Position;
+    float3 m_normal : NORMAL;
+    float4 m_tangent : TANGENT;
+    float3 m_worldPosition : UV0;
+    uint m_instanceId : SV_InstanceID;
+};
+
+VSOutput MainVS(VSInput IN, uint instanceId : SV_InstanceID)
+{
+    VSOutput OUT;
+    OUT.m_instanceId = instanceId;
+
+    float3 worldPosition = mul(GetObjectToWorldMatrix(instanceId), float4(IN.m_position, 1.0)).xyz;
+    OUT.m_worldPosition = worldPosition;
+    OUT.m_position = mul(ViewSrg::m_viewProjectionMatrix, float4(worldPosition, 1.0));
+    OUT.m_normal = IN.m_normal;
+    OUT.m_tangent = IN.m_tangent;
+
+    return OUT;
+}
+
+ForwardPassOutput MainPS(VSOutput IN)
+{
+    real4x4 objectToWorld = real4x4(GetObjectToWorldMatrix(IN.m_instanceId));
+    real3x3 objectToWorldIT = real3x3(GetObjectToWorldMatrixInverseTranspose(IN.m_instanceId));
+
+    float3 normalWS, tangentWS, bitangentWS;
+    ConstructTBN(real3(IN.m_normal), real4(IN.m_tangent), objectToWorld, objectToWorldIT, normalWS, tangentWS, bitangentWS);
+
+    // --- Surface (use white albedo so diffuse result is pure lighting intensity) ---
+    Surface surface;
+    surface.position = IN.m_worldPosition.xyz;
+    surface.normal = normalWS;
+    surface.vertexNormal = normalWS;
+    surface.roughnessLinear = 1.0;
+    surface.CalculateRoughnessA();
+    surface.SetAlbedoAndSpecularF0(float3(1.0, 1.0, 1.0), 0.0, 0.0);  // White albedo so diffuse = pure light contribution
+    surface.clearCoat.InitializeToZero();
+
+    // --- Light culling ---
+    LightCullingTileIterator tileIterator;
+    tileIterator.Init(IN.m_position, PassSrg::m_lightListRemapped, PassSrg::m_tileLightData);
+
+    // --- LightingData ---
+    float3 views[MAX_SHADING_VIEWS];
+    views[0] = ViewSrg::m_worldPosition.xyz;
+
+    LightingData lightingData;
+    lightingData.Init(surface.position, surface.normal, surface.roughnessLinear, views);
+    lightingData.specularResponse = FresnelSchlickWithRoughness(lightingData.GetSpecularNdotV(), surface.specularF0, surface.roughnessLinear);
+    lightingData.diffuseResponse = 1.0f - lightingData.specularResponse;
+
+    // --- Let the engine compute lighting for ALL light types ---
+    ApplyDecals(tileIterator, surface);
+    ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
+    ApplyIblForward(surface, lightingData);
+    lightingData.FinalizeLighting();
+
+    // --- Post-process: stylize the aggregate diffuse result ---
+    // Since we used white albedo, diffuseLighting IS the total light intensity.
+    float diffuseLuminance = dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722));
+    float band = step(0.5, diffuseLuminance);
+    float3 celColor = lerp(MaterialSrg::m_unlitColor, MaterialSrg::m_litColor, band);
+
+    // --- Output ---
+    // Use GetPbrLightingOutput for properly encoded albedo/normal/specularF0 render targets
+    // (supports SSAO, SSR, diffuse GI, etc.), then override the diffuse color with our cel result.
+    PbrLightingOutput lightingOutput = GetPbrLightingOutput(surface, lightingData, 1.0);
+
+    ForwardPassOutput OUT;
+    OUT.m_diffuseColor = float4(celColor, -1);  // Override diffuse with our cel-shaded color
+    OUT.m_specularColor = float4(0.0, 0.0, 0.0, 1.0);
+    OUT.m_specularF0 = lightingOutput.m_specularF0;
+    OUT.m_albedo = lightingOutput.m_albedo;
+    OUT.m_normal = lightingOutput.m_normal;
+    return OUT;
+}
