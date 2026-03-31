@@ -235,3 +235,63 @@ The engine's lighting functions (`GetDiffuseLighting`, `GetSpecularLighting` in 
 - **Units matter**: Directional lights use lux, point/spot lights use candelas. These are physically-based units. A directional light at intensity 4 lux is dim; you might see values like 2-10 in typical scenes. Point lights in candelas can be in the hundreds or thousands.
 - **The `0.001 * 0.001` minimum distance**: Prevents division by zero when a fragment is exactly at the light's position.
 - **`rsqrt(distSq)`**: Reciprocal square root -- faster than `normalize(toLight)` since we already have `distSq` computed and need both the direction and the distance.
+
+## Emissive Surfaces and Global Illumination
+
+### Do Emissive Materials Light Nearby Surfaces?
+
+Not directly. An emissive material just writes bright pixels to its own render target -- it doesn't create a light source. In the forward pass, there is no mechanism for one surface to know about another surface's emissive output.
+
+However, O3DE has a real-time global illumination system called **DiffuseProbeGrid** (based on NVIDIA RTX-GI) that *does* propagate light from emissive surfaces to nearby geometry. This project already has the DiffuseProbeGrid gem enabled.
+
+### How DiffuseProbeGrid Works
+
+The system places a 3D grid of probes in the level. Each probe ray-traces the scene from its position, sampling whatever it hits -- including emissive surfaces. The results are filtered into irradiance textures that represent how much indirect light reaches each probe from every direction.
+
+The important thing: **this happens entirely outside your forward pass shader.** The pipeline is:
+
+1. **Forward Pass** (your shader) -- Outputs direct lighting to `m_diffuseColor`, surface albedo to `m_albedo`, encoded normal to `m_normal`
+2. **DiffuseProbeGrid Ray Trace Pass** -- Casts rays from probes, captures emissive + bounced light, builds irradiance textures
+3. **DiffuseComposite Pass** -- A fullscreen pass that reads your `m_albedo` output and multiplies it by the probe irradiance:
+   ```hlsl
+   diffuse += (albedo / PI) * probeIrradiance * blendWeight;
+   ```
+4. **DiffuseSpecularMerge** -- Combines the final diffuse and specular buffers into the output image
+
+### What This Means for Custom Shaders
+
+Your custom shader already supports receiving GI from emissive surfaces. The DiffuseComposite pass reads the `m_albedo` render target that you're already writing to. As long as you output a meaningful albedo, the GI system will multiply it by whatever indirect light the probes captured -- including bounced light from emissive materials.
+
+No shader changes needed. You just need:
+- A **DiffuseProbeGrid component** placed in the level (covers a volume of space)
+- A **GPU that supports ray tracing** (DX12 with DXR support)
+- Emissive surfaces within or near the probe grid volume
+
+The probe grid has a configurable `EmissiveMultiplier` that scales how much emissive surfaces contribute to the GI.
+
+### The IBL Double-Counting Caveat
+
+There is one subtlety. Our shaders apply IBL (skylight) directly in the forward pass. The DiffuseComposite pass *also* applies global IBL as a fallback where probe coverage is incomplete:
+
+```hlsl
+// In DiffuseComposite:
+float3 globalDiffuse = (albedo * globalIrradiance) * pow(2.0, SceneSrg::m_iblExposure);
+diffuse += globalDiffuse * (1.0 - probeIrradianceBlendWeight);
+```
+
+Where probes fully cover an area (`blendWeight = 1.0`), the composite pass uses only probe data and the IBL fallback term drops to zero. Where there are no probes (`blendWeight = 0.0`), it falls back entirely to the global IBL cubemap.
+
+Since our forward pass *already* applies IBL, you could get double-brightness in areas without probe coverage. The engine's PBR shaders handle this by letting the DiffuseGlobalFullscreen pass manage all ambient/IBL, but they also apply IBL in the forward pass. The system seems designed to tolerate this overlap. If you notice over-brightening, you could:
+- Remove the IBL section from your forward pass and let the composite pass handle all ambient
+- Or keep it and accept that the two systems overlap slightly (this is what the engine's own shaders do)
+
+### Making Your Own Material Emissive
+
+If you want your custom material to *be* emissive (so it lights other things via the probe grid), add an emissive term to your forward pass output. The ray tracing pass samples whatever color your surface outputs:
+
+```hlsl
+float3 emissive = MyMaterialSrg::m_emissiveColor * MyMaterialSrg::m_emissiveIntensity;
+psOutput.m_diffuseColor = float4(diffuse + emissive, 1.0);
+```
+
+The probes will pick up the emissive contribution when their rays hit your surface, and that light will then appear on nearby geometry in subsequent frames.
