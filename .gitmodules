@@ -10,3 +10,6 @@
 [submodule "Dependencies/Gems/CppUtilsO3deGem"]
 	path = Deps/CppUtilsO3deGem
 	url = https://github.com/ChristianHinkle/CppUtilsO3deGem.git
+[submodule "Deps/o3dimport"]
+	path = Deps/o3dimport
+	url = https://github.com/galibzon/o3dimport.git
