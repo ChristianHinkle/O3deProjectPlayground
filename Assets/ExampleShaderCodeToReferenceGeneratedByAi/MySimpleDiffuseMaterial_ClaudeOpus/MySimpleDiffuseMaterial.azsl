@@ -37,6 +37,28 @@ float3 WorldToCubemapCoords(float3 dir)
     return float3(-dir.x, dir.z, -dir.y);
 }
 
+// Computes attenuated light intensity for a positional light source.
+// Returns the final RGB intensity after distance and radius falloff.
+float3 ComputePointLightIntensity(float3 worldPos, float3 lightPos, float invAttenuationRadiusSq, float3 rgbIntensity, out float3 outDirToLight)
+{
+    float3 toLight = lightPos - worldPos;
+    float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
+    outDirToLight = toLight * rsqrt(distSq);
+
+    float falloff = distSq * invAttenuationRadiusSq;
+    float radiusAttenuation = saturate(1.0 - falloff * falloff);
+    radiusAttenuation *= radiusAttenuation;
+
+    return rgbIntensity / distSq * radiusAttenuation;
+}
+
+// Computes cone attenuation for a spot/disk light. Returns 0-1 multiplier.
+float ComputeSpotConeAttenuation(float3 dirToLight, float3 spotDirection, float cosInnerConeAngle, float cosOuterConeAngle)
+{
+    float cosAngle = dot(-dirToLight, normalize(spotDirection));
+    return saturate((cosAngle - cosOuterConeAngle) / max(cosInnerConeAngle - cosOuterConeAngle, 0.001));
+}
+
 VSOutput MainVS(VSInput vsInput, uint instanceId : SV_InstanceID)
 {
     VSOutput vsOutput;
@@ -69,50 +91,50 @@ ForwardPassOutput MainPS(VSOutput psInput)
         diffuse += albedo * NdotL * SceneSrg::m_directionalLights[dirIdx].m_rgbIntensityLux;
     }
 
-    // --- Point lights (Sphere type in editor Light component) ---
+    // --- Point lights: area (Sphere) and simple punctual variants ---
+    float3 ptDirToLight;
     for (uint ptIdx = 0; ptIdx < ViewSrg::m_pointLightCount; ptIdx++)
     {
-        float3 lightPos = ViewSrg::m_pointLights[ptIdx].m_position;
-        float3 toLight = lightPos - psInput.m_worldPosition;
-        float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
-        float3 dirToLight = toLight * rsqrt(distSq);
-
-        float NdotL = saturate(dot(normal, dirToLight));
-
-        // Inverse-square falloff with radius attenuation
-        float invRadiusSq = ViewSrg::m_pointLights[ptIdx].m_invAttenuationRadiusSquared;
-        float falloff = distSq * invRadiusSq;
-        float radiusAttenuation = saturate(1.0 - falloff * falloff);
-        radiusAttenuation *= radiusAttenuation;
-
-        float3 lightIntensity = ViewSrg::m_pointLights[ptIdx].m_rgbIntensityCandelas / distSq * radiusAttenuation;
-        diffuse += albedo * NdotL * lightIntensity;
+        float3 intensity = ComputePointLightIntensity(psInput.m_worldPosition,
+            ViewSrg::m_pointLights[ptIdx].m_position,
+            ViewSrg::m_pointLights[ptIdx].m_invAttenuationRadiusSquared,
+            ViewSrg::m_pointLights[ptIdx].m_rgbIntensityCandelas, ptDirToLight);
+        diffuse += albedo * saturate(dot(normal, ptDirToLight)) * intensity;
+    }
+    for (uint sptIdx = 0; sptIdx < ViewSrg::m_simplePointLightCount; sptIdx++)
+    {
+        float3 intensity = ComputePointLightIntensity(psInput.m_worldPosition,
+            ViewSrg::m_simplePointLights[sptIdx].m_position,
+            ViewSrg::m_simplePointLights[sptIdx].m_invAttenuationRadiusSquared,
+            ViewSrg::m_simplePointLights[sptIdx].m_rgbIntensityCandelas, ptDirToLight);
+        diffuse += albedo * saturate(dot(normal, ptDirToLight)) * intensity;
     }
 
-    // --- Disk lights (SpotDisk type in editor Light component) ---
+    // --- Spot lights: area (Disk) and simple punctual variants ---
+    float3 spDirToLight;
     for (uint spIdx = 0; spIdx < ViewSrg::m_diskLightCount; spIdx++)
     {
-        float3 lightPos = ViewSrg::m_diskLights[spIdx].m_position;
-        float3 toLight = lightPos - psInput.m_worldPosition;
-        float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
-        float3 dirToLight = toLight * rsqrt(distSq);
-
-        float NdotL = saturate(dot(normal, dirToLight));
-
-        // Distance attenuation
-        float invRadiusSq = ViewSrg::m_diskLights[spIdx].m_invAttenuationRadiusSquared;
-        float falloff = distSq * invRadiusSq;
-        float radiusAttenuation = saturate(1.0 - falloff * falloff);
-        radiusAttenuation *= radiusAttenuation;
-
-        // Cone attenuation
-        float cosAngle = dot(-dirToLight, normalize(ViewSrg::m_diskLights[spIdx].m_direction));
-        float cosOuter = ViewSrg::m_diskLights[spIdx].m_cosOuterConeAngle;
-        float cosInner = ViewSrg::m_diskLights[spIdx].m_cosInnerConeAngle;
-        float coneAttenuation = saturate((cosAngle - cosOuter) / max(cosInner - cosOuter, 0.001));
-
-        float3 lightIntensity = ViewSrg::m_diskLights[spIdx].m_rgbIntensityCandelas / distSq * radiusAttenuation * coneAttenuation;
-        diffuse += albedo * NdotL * lightIntensity;
+        float3 intensity = ComputePointLightIntensity(psInput.m_worldPosition,
+            ViewSrg::m_diskLights[spIdx].m_position,
+            ViewSrg::m_diskLights[spIdx].m_invAttenuationRadiusSquared,
+            ViewSrg::m_diskLights[spIdx].m_rgbIntensityCandelas, spDirToLight);
+        float cone = ComputeSpotConeAttenuation(spDirToLight,
+            ViewSrg::m_diskLights[spIdx].m_direction,
+            ViewSrg::m_diskLights[spIdx].m_cosInnerConeAngle,
+            ViewSrg::m_diskLights[spIdx].m_cosOuterConeAngle);
+        diffuse += albedo * saturate(dot(normal, spDirToLight)) * intensity * cone;
+    }
+    for (uint sspIdx = 0; sspIdx < ViewSrg::m_simpleSpotLightCount; sspIdx++)
+    {
+        float3 intensity = ComputePointLightIntensity(psInput.m_worldPosition,
+            ViewSrg::m_simpleSpotLights[sspIdx].m_position,
+            ViewSrg::m_simpleSpotLights[sspIdx].m_invAttenuationRadiusSquared,
+            ViewSrg::m_simpleSpotLights[sspIdx].m_rgbIntensityCandelas, spDirToLight);
+        float cone = ComputeSpotConeAttenuation(spDirToLight,
+            ViewSrg::m_simpleSpotLights[sspIdx].m_direction,
+            ViewSrg::m_simpleSpotLights[sspIdx].m_cosInnerConeAngle,
+            ViewSrg::m_simpleSpotLights[sspIdx].m_cosOuterConeAngle);
+        diffuse += albedo * saturate(dot(normal, spDirToLight)) * intensity * cone;
     }
 
     // --- IBL diffuse (skylight / global illumination cubemap) ---
