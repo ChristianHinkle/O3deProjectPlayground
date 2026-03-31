@@ -74,46 +74,46 @@ ForwardPassOutput MainPS(VSOutput psInput)
         lightAmount += NdotL * intensity;
     }
 
-    // --- Simple point lights (CPU-culled path) ---
-    for (uint ptIdx = 0; ptIdx < ViewSrg::m_simplePointLightCount; ptIdx++)
+    // --- Point lights (Sphere type in editor Light component) ---
+    for (uint ptIdx = 0; ptIdx < ViewSrg::m_pointLightCount; ptIdx++)
     {
-        float3 lightPos = ViewSrg::m_simplePointLights[ptIdx].m_position;
+        float3 lightPos = ViewSrg::m_pointLights[ptIdx].m_position;
         float3 toLight = lightPos - psInput.m_worldPosition;
         float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
         float3 dirToLight = toLight * rsqrt(distSq);
 
         float NdotL = saturate(dot(normal, dirToLight));
 
-        float invRadiusSq = ViewSrg::m_simplePointLights[ptIdx].m_invAttenuationRadiusSquared;
+        float invRadiusSq = ViewSrg::m_pointLights[ptIdx].m_invAttenuationRadiusSquared;
         float falloff = distSq * invRadiusSq;
         float radiusAttenuation = saturate(1.0 - falloff * falloff);
         radiusAttenuation *= radiusAttenuation;
 
-        float intensity = dot(ViewSrg::m_simplePointLights[ptIdx].m_rgbIntensityCandelas, float3(0.2126, 0.7152, 0.0722));
+        float intensity = dot(ViewSrg::m_pointLights[ptIdx].m_rgbIntensityCandelas, float3(0.2126, 0.7152, 0.0722));
         lightAmount += NdotL * (intensity / distSq) * radiusAttenuation;
     }
 
-    // --- Simple spot lights (CPU-culled path) ---
-    for (uint spIdx = 0; spIdx < ViewSrg::m_simpleSpotLightCount; spIdx++)
+    // --- Disk lights (SpotDisk type in editor Light component) ---
+    for (uint spIdx = 0; spIdx < ViewSrg::m_diskLightCount; spIdx++)
     {
-        float3 lightPos = ViewSrg::m_simpleSpotLights[spIdx].m_position;
+        float3 lightPos = ViewSrg::m_diskLights[spIdx].m_position;
         float3 toLight = lightPos - psInput.m_worldPosition;
         float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
         float3 dirToLight = toLight * rsqrt(distSq);
 
         float NdotL = saturate(dot(normal, dirToLight));
 
-        float invRadiusSq = ViewSrg::m_simpleSpotLights[spIdx].m_invAttenuationRadiusSquared;
+        float invRadiusSq = ViewSrg::m_diskLights[spIdx].m_invAttenuationRadiusSquared;
         float falloff = distSq * invRadiusSq;
         float radiusAttenuation = saturate(1.0 - falloff * falloff);
         radiusAttenuation *= radiusAttenuation;
 
-        float cosAngle = dot(-dirToLight, normalize(ViewSrg::m_simpleSpotLights[spIdx].m_direction));
-        float cosOuter = ViewSrg::m_simpleSpotLights[spIdx].m_cosOuterConeAngle;
-        float cosInner = ViewSrg::m_simpleSpotLights[spIdx].m_cosInnerConeAngle;
+        float cosAngle = dot(-dirToLight, normalize(ViewSrg::m_diskLights[spIdx].m_direction));
+        float cosOuter = ViewSrg::m_diskLights[spIdx].m_cosOuterConeAngle;
+        float cosInner = ViewSrg::m_diskLights[spIdx].m_cosInnerConeAngle;
         float coneAttenuation = saturate((cosAngle - cosOuter) / max(cosInner - cosOuter, 0.001));
 
-        float intensity = dot(ViewSrg::m_simpleSpotLights[spIdx].m_rgbIntensityCandelas, float3(0.2126, 0.7152, 0.0722));
+        float intensity = dot(ViewSrg::m_diskLights[spIdx].m_rgbIntensityCandelas, float3(0.2126, 0.7152, 0.0722));
         lightAmount += NdotL * (intensity / distSq) * radiusAttenuation * coneAttenuation;
     }
 
