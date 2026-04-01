@@ -307,7 +307,7 @@ You read light data directly from the SRGs and write your own shading math per l
 - You're reimplementing attenuation math, cone falloff, etc. that the engine already has. The math is identical -- it's pure code duplication.
 - No shadow support unless you also manually include and call the engine's shadow sampling functions.
 
-**Best for:** Shaders where the artistic look requires per-light decisions. Cel-shading with per-light-type behavior, hatching/crosshatching, painterly styles where different light sources should produce visually distinct effects.
+**Best for:** Learning how O3DE's lighting data is structured. In practice, LightUtil Override provides the same per-light access inside `Apply()` with far less maintenance (see "Do You Need Manual Light Loops?" below).
 
 ### Pipeline Post-Process (directory: `PipelinePostProcess_SimpleDiffuse_ClaudeOpus`, `PipelinePostProcess_SimpleCelShaded_ClaudeOpus`)
 
@@ -356,6 +356,47 @@ The geometry pass outputs surface properties (albedo, normal, roughness, metalli
 | Maintenance burden | High | Low | Moderate | Low |
 | NPR suitability | Excellent | Good | Excellent | Poor |
 
+### Do You Need Manual Light Loops?
+
+Manual light loops (Custom Light Loops) bypass the engine's pipeline entirely -- no shadows, no GPU culling, no future light type support. The question is whether they unlock any visual effect that LightUtil Override can't achieve.
+
+**They don't.** The LightUtil Override's `Apply()` method receives the same light struct with the same fields (`m_position`, `m_direction`, `m_rgbIntensityCandelas`, etc.). You have full per-light control inside `Apply()`. The only thing manual loops give you beyond that is control over the *iteration itself* (e.g., skip lights, reorder them), which isn't needed for any common NPR effect.
+
+Manual light loops are valuable as a learning tool -- they show exactly where light data lives and how attenuation works. But for production NPR shaders, LightUtil Override + post-process catch-all is strictly better: same artistic control, plus shadows, culling, and forward compatibility.
+
+### Do You Need Per-Light Overrides, or Is Post-Process Enough?
+
+Most NPR effects are functions of **total light intensity** on the surface, not per-light decisions. Post-process alone handles:
+
+- **Cel-shading / toon bands** -- Quantize aggregate luminance
+- **Hatching / crosshatching** -- Hatch density driven by total brightness
+- **Dithering / stippling** -- Threshold pattern based on total brightness
+- **Color ramp mapping** -- Map luminance to an artistic gradient
+- **Posterization / flat shading** -- Reduce to N colors
+- **Ink outlines** -- Depth/normal edge detection, not light-dependent
+- **Rim lighting** -- View-angle effect (`1 - NdotV`), independent of light sources
+
+Per-light overrides matter when **nonlinear functions interact with light summation.** The core difference: `step(threshold, A + B)` is not the same as `step(threshold, A) + step(threshold, B)`.
+
+Example with two dim lights hitting a surface:
+
+| | Light A (NdotL=0.3) | Light B (NdotL=0.4) | Result |
+|---|---|---|---|
+| **Post-process**: PBR sum, then step | 0.3 + 0.4 = 0.7 | step(0.5, 0.7) = 1.0 | **Lit** |
+| **Per-light override**: step each, then sum | step(0.5, 0.3) + step(0.5, 0.4) = 0 + 0 | 0.0 | **Dark** |
+
+With post-process, two individually-weak lights can combine to cross the threshold. With per-light override, each light independently decides "lit or not" before combining. This affects the **shape of shadow boundaries** when multiple lights overlap.
+
+Effects where this per-light decision genuinely changes the visual result:
+
+- **Per-light shadow boundary control** -- Each light stamps a hard cel-shaded edge that holds its shape regardless of other lights. With post-process only, adding a second light can "fill in" a shadow, softening the cel look.
+- **Per-light color attribution** -- Warm-toned sunlight vs cool-toned point lights, decided per-light inside `Apply()`. Post-process only sees the combined color.
+- **Per-light anisotropic stylization** -- Hatching strokes aligned to each light's direction independently. Post-process can only orient strokes based on the aggregate or the surface normal.
+
+These are real differences, but they're subtle and increasingly niche. In typical scenes with one dominant directional light plus ambient, post-process and per-light override produce nearly identical results.
+
+**Practical recommendation:** Start with Pipeline Post-Process alone. It covers the vast majority of NPR effects with minimal code and full engine support (shadows, all light types, future-proof). If you later notice specific multi-light situations where shadow boundaries look wrong or lights are filling in shadows you want to keep, add LightUtil overrides for the offending light types. The combined approach (`LightUtilOverride_SimpleCelShaded_ClaudeOpus`) already has this structure -- per-light overrides for common types, post-process catch-all for everything.
+
 ### Why This Matters for O3DE Specifically
 
 O3DE uses forward+ rendering by default. This is the pipeline where each material's pixel shader runs with access to all light data. This is precisely what makes Custom Light Loops and LightUtil Override possible -- your pixel shader gets to decide how every light affects every pixel. A deferred renderer like Unreal's cannot offer this because lighting happens in a separate pass with no knowledge of the original material.
@@ -364,7 +405,7 @@ Pipeline Post-Process is a valid middle ground, but it does reduce the forward+ 
 
 LightUtil Override is the strongest middle ground: you get per-light artistic control for the types you override, automatic PBR fallback for types you don't, and you stay within the engine's pipeline for shadows, culling, and future features. The tradeoff is implementation complexity (include-order dependencies, interface contracts).
 
-The sweet spot depends on how much per-light control your art direction actually needs. If you just want "2-band cel shading that works with all lights," Pipeline Post-Process is pragmatic and future-proof. If you want "directional lights cast hatching, point lights cast hard-edged pools of light, and spot lights produce color-shifted rim highlights," Custom Light Loops gives total control. If you want per-light customization with graceful fallback, LightUtil Override is the best fit.
+The sweet spot depends on how much per-light control your art direction actually needs. For most NPR work, start with **Pipeline Post-Process** -- it's the simplest, most future-proof, and covers the vast majority of effects. Add **LightUtil Overrides** for specific light types only if you see multi-light shadow boundary issues. **Custom Light Loops** are useful for learning but offer no artistic capability that LightUtil Override doesn't also provide, while missing shadows and future compatibility.
 
 ### LightUtil Override (directory: `LightUtilOverride_SimpleDiffuse_ClaudeOpus`, `LightUtilOverride_SimpleCelShaded_ClaudeOpus`)
 
