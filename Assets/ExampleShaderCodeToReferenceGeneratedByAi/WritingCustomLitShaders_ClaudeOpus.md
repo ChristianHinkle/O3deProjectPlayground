@@ -382,9 +382,33 @@ You `#define` your own class name before the engine includes run, and the engine
 With this approach you can:
 - Override the `Apply()` method for specific light types with your own shading math
 - Only customize the final diffuse/specular calculation
-- Leave light types you don't care about customizing on their PBR defaults -- they fall back to standard PBR automatically
+- Leave light types you don't override on their PBR defaults
 
-This gives per-light-type control (like Custom Light Loops) while using the engine's pipeline infrastructure (like Pipeline Post-Process). New light types added by the engine fall back to PBR defaults until you write a custom util for them -- which is arguably the right behavior (new lights work with standard shading, and you decide later whether to stylize them).
+New light types added by the engine fall back to PBR defaults until you write a custom util for them.
+
+#### Combining LightUtil Override with Post-Process (Recommended for NPR)
+
+For NPR styles like cel-shading, a pure LightUtil Override has a problem: any light type you *didn't* override (capsule, quad, polygon, or future types) contributes smooth PBR diffuse, which looks visually inconsistent next to your cel-shaded lights.
+
+The solution is to **combine LightUtil overrides with a post-process quantization step.** This is what `LightUtilOverride_SimpleCelShaded_ClaudeOpus` does:
+
+1. Override the common light types (directional, point, spot, disk) with per-light cel-shading via custom LightUtil classes
+2. Let unoverridden types (capsule, quad, polygon) fall through to PBR defaults
+3. After `FinalizeLighting()`, quantize the **total** `diffuseLighting` into bands before output
+
+```hlsl
+// After the engine pipeline runs (overridden + PBR lights all accumulated):
+float diffuseLuminance = dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722));
+float band = step(0.5, diffuseLuminance);
+float3 celColor = lerp(MaterialSrg::m_unlitColor, MaterialSrg::m_litColor, band);
+```
+
+The post-process step is the safety net: even if a PBR-default light contributes smooth diffuse, the final quantization forces it into the same discrete bands as everything else. No light source can leak smooth PBR into the final output.
+
+**Why both layers matter:**
+- The per-light overrides give you control over *how each light individually decides lit vs unlit*. A surface at 45 degrees to a light (NdotL=0.7) steps to fully lit per-light, before attenuation is applied.
+- The post-process catch-all ensures visual consistency for any light type you haven't explicitly overridden. Without it, an unoverridden capsule light would produce smooth gradients that look out of place.
+- Together, they give you the best of all three approaches: per-light artistic control where you want it, engine pipeline infrastructure for everything else, and a guaranteed stylized look with no PBR leaks.
 
 #### Include Order (Critical)
 
