@@ -70,6 +70,7 @@ ForwardPassOutput MainPS(VSOutput IN)
     surface.CalculateRoughnessA();
     surface.SetAlbedoAndSpecularF0(MaterialSrg::m_baseColor, 0.0, 0.0);  // No specular, no metallic
     surface.clearCoat.InitializeToZero();
+    surface.lightingChannels = 0xFFFFFFFF; // Receive light from all channels
 
     // --- Light culling ---
     LightCullingTileIterator tileIterator;

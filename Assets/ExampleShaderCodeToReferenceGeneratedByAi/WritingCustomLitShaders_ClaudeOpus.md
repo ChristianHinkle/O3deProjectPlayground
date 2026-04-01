@@ -235,6 +235,7 @@ The engine's lighting functions (`GetDiffuseLighting`, `GetSpecularLighting` in 
 - **Units matter**: Directional lights use lux, point/spot lights use candelas. These are physically-based units. A directional light at intensity 4 lux is dim; you might see values like 2-10 in typical scenes. Point lights in candelas can be in the hundreds or thousands.
 - **The `0.001 * 0.001` minimum distance**: Prevents division by zero when a fragment is exactly at the light's position.
 - **`rsqrt(distSq)`**: Reciprocal square root -- faster than `normalize(toLight)` since we already have `distSq` computed and need both the direction and the distance.
+- **`surface.lightingChannels`**: If you use the engine's `Surface` struct and lighting pipeline, you **must** set `surface.lightingChannels = 0xFFFFFFFF` (or the appropriate channel mask). Every light type checks `IsSameLightChannel(light.m_lightingChannelMask, surface.lightingChannels)` before applying. If `lightingChannels` is uninitialized (zero), the bitwise AND is always zero, and **all direct lights are silently skipped**. The surface will appear to receive only IBL/skylight. This field has no default value in the `Surface` class.
 
 ## Emissive Surfaces and Global Illumination
 
