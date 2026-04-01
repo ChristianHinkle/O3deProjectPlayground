@@ -289,7 +289,7 @@ Since our forward pass *already* applies IBL, you could get double-brightness in
 
 There are three broad strategies for implementing non-standard shading models. Each trades off artistic control against maintenance burden and future-proofing. Understanding these tradeoffs is important because O3DE's forward+ pipeline is one of the main reasons to use this engine for NPR work.
 
-### Approach A: Custom Light Loops (What Our Shaders Do)
+### Custom Light Loops (directory: `MySimpleDiffuseMaterial_ClaudeOpus`, `MySimpleCelShadedMaterial_ClaudeOpus`)
 
 You read light data directly from the SRGs and write your own shading math per light type.
 
@@ -308,7 +308,7 @@ You read light data directly from the SRGs and write your own shading math per l
 
 **Best for:** Shaders where the artistic look requires per-light decisions. Cel-shading with per-light-type behavior, hatching/crosshatching, painterly styles where different light sources should produce visually distinct effects.
 
-### Approach B: Engine Pipeline with Post-Processing (Stylize the Result)
+### Pipeline Post-Process (directory: `PipelinePostProcess_SimpleDiffuse_ClaudeOpus`, `PipelinePostProcess_SimpleCelShaded_ClaudeOpus`)
 
 You populate the engine's `Surface` struct, call its lighting evaluation, and get back a `LightingData` result with fully computed diffuse/specular. Then you stylize that aggregate result.
 
@@ -326,7 +326,7 @@ You populate the engine's `Surface` struct, call its lighting evaluation, and ge
 
 **Best for:** Styles where the aggregate lighting matters more than individual light behavior. Simple cel-shading (just quantize total brightness), tinted shadows, color grading that depends on light intensity, or when you want a material that looks "almost PBR but with a twist."
 
-### Approach C: Deferred Rendering (What Unreal Engine Does)
+### Deferred Rendering (What Unreal Engine Does -- not applicable to O3DE)
 
 The geometry pass outputs surface properties (albedo, normal, roughness, metallic) to a G-buffer. A separate fullscreen pass computes lighting for all pixels using those properties.
 
@@ -344,28 +344,30 @@ The geometry pass outputs surface properties (albedo, normal, roughness, metalli
 
 ### Comparison Table
 
-| | A: Custom Light Loops | B: Post-Process Pipeline | C: Deferred |
-|---|---|---|---|
-| Per-light artistic control | Full | None | None |
-| Per-material shading model | Yes | Partial (output only) | No |
-| Supports all light types automatically | No (manual) | Yes | Yes |
-| Future-proof for new light types | No | Yes | Yes |
-| Shadow support | Manual | Automatic | Automatic |
-| Code duplication with engine | High | None | N/A |
-| Maintenance burden | High | Low | Low |
-| NPR suitability | Excellent | Good | Poor |
+| | Custom Light Loops | Pipeline Post-Process | LightUtil Override | Deferred (reference) |
+|---|---|---|---|---|
+| Per-light artistic control | Full | None | Per-overridden type | None |
+| Per-material shading model | Yes | Partial (output only) | Yes | No |
+| Supports all light types automatically | No (manual) | Yes | Unoverridden types fall back to PBR | Yes |
+| Future-proof for new light types | No | Yes | New types get PBR default | Yes |
+| Shadow support | Manual | Automatic | Automatic | Automatic |
+| Code duplication with engine | High | None | Moderate (attenuation math) | N/A |
+| Maintenance burden | High | Low | Moderate | Low |
+| NPR suitability | Excellent | Good | Excellent | Poor |
 
 ### Why This Matters for O3DE Specifically
 
-O3DE uses forward+ rendering by default. This is the pipeline where each material's pixel shader runs with access to all light data. This is precisely what makes Approach A possible and powerful -- your pixel shader gets to decide how every light affects every pixel. A deferred renderer like Unreal's cannot offer this because lighting happens in a separate pass with no knowledge of the original material.
+O3DE uses forward+ rendering by default. This is the pipeline where each material's pixel shader runs with access to all light data. This is precisely what makes Custom Light Loops and LightUtil Override possible -- your pixel shader gets to decide how every light affects every pixel. A deferred renderer like Unreal's cannot offer this because lighting happens in a separate pass with no knowledge of the original material.
 
-Approach B is a valid middle ground, but it does reduce the forward+ advantage. If all you're doing is computing standard PBR and then quantizing the result, you could achieve nearly the same thing in a deferred engine by post-processing the lighting buffer. You're not fully leveraging the per-material-per-light access that forward+ provides.
+Pipeline Post-Process is a valid middle ground, but it does reduce the forward+ advantage. If all you're doing is computing standard PBR and then quantizing the result, you could achieve nearly the same thing in a deferred engine by post-processing the lighting buffer. You're not fully leveraging the per-material-per-light access that forward+ provides.
 
-The sweet spot depends on how much per-light control your art direction actually needs. If you just want "2-band cel shading that works with all lights," Approach B is pragmatic and future-proof. If you want "directional lights cast hatching, point lights cast hard-edged pools of light, and spot lights produce color-shifted rim highlights," only Approach A can do that.
+LightUtil Override is the strongest middle ground: you get per-light artistic control for the types you override, automatic PBR fallback for types you don't, and you stay within the engine's pipeline for shadows, culling, and future features. The tradeoff is implementation complexity (include-order dependencies, interface contracts).
 
-### The Engine's Own Customization Hook (A Middle Ground)
+The sweet spot depends on how much per-light control your art direction actually needs. If you just want "2-band cel shading that works with all lights," Pipeline Post-Process is pragmatic and future-proof. If you want "directional lights cast hatching, point lights cast hard-edged pools of light, and spot lights produce color-shifted rim highlights," Custom Light Loops gives total control. If you want per-light customization with graceful fallback, LightUtil Override is the best fit.
 
-The engine provides a designed customization point that sits between A and B. Every light type's utility class is wrapped in a `#ifndef` guard:
+### LightUtil Override (directory: `LightUtilOverride_SimpleDiffuse_ClaudeOpus`, `LightUtilOverride_SimpleCelShaded_ClaudeOpus`)
+
+The engine provides a designed customization point that sits between Custom Light Loops and Pipeline Post-Process. Every light type's utility class is wrapped in a `#ifndef` guard:
 
 ```hlsl
 // In SimplePointLight.azsli:
@@ -374,15 +376,72 @@ The engine provides a designed customization point that sits between A and B. Ev
 #endif
 ```
 
-This means you can define your own `SimplePointLightUtil` class *before* including the engine's light files, and the engine will use yours instead of the PBR default. The engine even provides `LightUtilTemplate.azsli` as a starting point for this.
+You `#define` your own class name before the engine includes run, and the engine uses yours instead of the PBR default. The engine provides `LightUtilTemplate.azsli` as a starting point.
 
 With this approach you can:
 - Override the `Apply()` method for specific light types with your own shading math
-- Delegate to the base PBR class for Init/GetFalloff/GetSurfaceToLightDirection (reuse the attenuation math)
 - Only customize the final diffuse/specular calculation
-- Leave light types you don't care about customizing on their PBR defaults
+- Leave light types you don't care about customizing on their PBR defaults -- they fall back to standard PBR automatically
 
-This gives per-light-type control (like A) while reusing the engine's infrastructure (like B), but it does require defining a custom util class for each light type you want to override. New light types added by the engine would fall back to PBR defaults until you write a custom util for them -- which is arguably the right behavior (new lights work, just with standard shading, until you decide to stylize them).
+This gives per-light-type control (like Custom Light Loops) while using the engine's pipeline infrastructure (like Pipeline Post-Process). New light types added by the engine fall back to PBR defaults until you write a custom util for them -- which is arguably the right behavior (new lights work with standard shading, and you decide later whether to stylize them).
+
+#### Include Order (Critical)
+
+The engine's `StandardLighting.azsli` is a monolith that includes prerequisites, defines `GetDiffuseLighting`/`GetSpecularLighting`, and then includes the light type files. Your custom util `#define` macros must be set before the light type files are included, but your custom classes need `Surface` and `LightingData` to be defined first.
+
+The solution is to manually include `StandardLighting.azsli`'s prerequisites before your custom utils:
+
+```hlsl
+// Step 1: Prerequisites (Surface, LightingData, BRDF)
+#include <Atom/Features/PBR/LightingOptions.azsli>
+#include <Atom/Features/PBR/Lighting/LightingData.azsli>
+#include <Atom/Features/PBR/Surfaces/StandardSurface.azsli>
+#include <Atom/Features/PBR/LightingUtils.azsli>
+#include <Atom/Features/PBR/Microfacet/Brdf.azsli>
+#include <Atom/Features/SampleBrdfMap.azsli>
+#include <Atom/Features/GoboTexture.azsli>
+
+// Step 2: Your custom LightUtil overrides (#defines + class definitions)
+#include "CelShadeLightUtils.azsli"
+
+// Step 3: StandardLighting.azsli (prereqs skipped via #pragma once)
+#include <Atom/Features/PBR/Lighting/StandardLighting.azsli>
+```
+
+`StandardLighting.azsli` uses `#pragma once` on all its sub-includes, so the prerequisites from Step 1 won't be double-included. When it reaches `Lights.azsli`, each light file checks `#ifndef SimplePointLightUtil` (etc.), finds your `#define` already set, skips the default, and uses your class.
+
+#### Custom Util Classes Must Be Self-Contained
+
+You might expect to wrap the base `_PBR` class via composition (as the `LightUtilTemplate.azsli` suggests). In practice this doesn't work because including the base light file (e.g., `SimplePointLight.azsli`) transitively includes `LightTypesCommon.azsli` → `BackLighting.azsli`, which calls `GetDiffuseLighting` -- a function that isn't defined until `StandardLighting.azsli` runs later. This creates a circular dependency.
+
+The working approach is to make your custom classes self-contained: include only `LightStructures.azsli` for the struct definitions, and implement your own `Init()` and `Apply()` with the same attenuation math. This duplicates some code from the base `_PBR` classes, but avoids the dependency cycle.
+
+#### Required Interface Methods
+
+The engine's forward pass code calls methods on your util classes beyond just `Init()` and `Apply()`. If you miss any, the shader compiler will fail. The required interface per light type:
+
+| Light Type | Required Methods |
+|---|---|
+| DirectionalLight | `Init()`, `Apply()` |
+| SimplePointLight | `Init()`, `Apply()`, `GetSurfaceToLightDirection()`, `GetFalloff()` |
+| SimpleSpotLight | `Init()`, `Apply()`, `GetSurfaceToLightDirection()`, `GetFalloff()` |
+| PointLight (Sphere) | `Init()`, `Apply()`, `ApplySampled()`, `GetSurfaceToLightDirection()`, `GetFalloff()` |
+| DiskLight (SpotDisk) | `Init()`, `Apply()`, `ApplySampled()`, `GetSurfaceToLightDirection()`, `GetDirectionToConeTip()`, `GetFalloff()` |
+
+`ApplySampled()` is called when `o_area_light_validation` is enabled (a debug/quality mode). A stub that delegates to `Apply()` is sufficient. `GetDirectionToConeTip()` is used by DiskLight's shadow evaluation code.
+
+#### Light Types in the Editor
+
+The editor's Light component creates different light types depending on the mode selected:
+
+| Editor Mode | Light Type | SRG Array |
+|---|---|---|
+| Simple Punctual (Point) | `SimplePointLight` | `ViewSrg::m_simplePointLights` |
+| Simple Punctual (Spot) | `SimpleSpotLight` | `ViewSrg::m_simpleSpotLights` |
+| Sphere (default Point) | `PointLight` | `ViewSrg::m_pointLights` |
+| SpotDisk (default Spot) | `DiskLight` | `ViewSrg::m_diskLights` |
+
+The "Simple Punctual" variants are cheaper (no shadows, no bulb radius) but less commonly used. The Sphere and SpotDisk variants are the editor defaults. Custom shaders should handle both pairs to work with all editor Light component configurations.
 
 ### Making Your Own Material Emissive
 

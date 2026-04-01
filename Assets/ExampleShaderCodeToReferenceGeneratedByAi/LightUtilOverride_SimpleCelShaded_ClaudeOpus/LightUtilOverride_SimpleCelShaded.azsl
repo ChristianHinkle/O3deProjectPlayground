@@ -1,6 +1,6 @@
 #pragma once
 
-// Approach B+: Use the engine's lighting pipeline with custom LightUtil overrides.
+// LightUtil Override: Use the engine's lighting pipeline with custom LightUtil overrides.
 // Each light type's Apply() is overridden to use CelShadeDiffuse() instead of the
 // engine's DiffuseLambertian(). The engine handles light iteration, culling, attenuation
 // init, shadows, and IBL. We only replace the per-light shading math.
@@ -8,7 +8,7 @@
 // Key advantage over Approach A: new light types (capsule, quad, polygon, future types)
 // fall back to PBR defaults instead of being invisible.
 //
-// Key advantage over Approach B: per-light control. Each light individually gets
+// Key advantage over Pipeline Post-Process: per-light control. Each light individually gets
 // cel-shaded rather than post-processing the aggregate result.
 
 #define FORCE_OPAQUE 1

@@ -1,5 +1,5 @@
 {
-    "Source": "ApproachBPlus_SimpleDiffuse.azsl",
+    "Source": "LightUtilOverride_SimpleDiffuse.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,

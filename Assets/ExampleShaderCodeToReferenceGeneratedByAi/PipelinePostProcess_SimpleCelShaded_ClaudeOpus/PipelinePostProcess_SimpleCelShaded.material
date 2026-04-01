@@ -1,5 +1,5 @@
 {
-    "materialType": "ApproachB_SimpleCelShaded.materialtype",
+    "materialType": "PipelinePostProcess_SimpleCelShaded.materialtype",
     "materialTypeVersion": 1,
     "propertyValues": {
         "settings.litColor": [1.0, 1.0, 1.0],

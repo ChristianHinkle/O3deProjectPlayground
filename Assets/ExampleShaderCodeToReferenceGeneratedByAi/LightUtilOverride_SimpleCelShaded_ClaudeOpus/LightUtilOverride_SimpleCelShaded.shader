@@ -1,5 +1,5 @@
 {
-    "Source": "ApproachB_SimpleCelShaded.azsl",
+    "Source": "LightUtilOverride_SimpleCelShaded.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,

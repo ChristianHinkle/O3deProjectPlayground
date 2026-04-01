@@ -1,5 +1,5 @@
 {
-    "materialType": "ApproachBPlus_SimpleCelShaded.materialtype",
+    "materialType": "LightUtilOverride_SimpleCelShaded.materialtype",
     "materialTypeVersion": 1,
     "propertyValues": {
         "settings.litColor": [1.0, 1.0, 1.0],

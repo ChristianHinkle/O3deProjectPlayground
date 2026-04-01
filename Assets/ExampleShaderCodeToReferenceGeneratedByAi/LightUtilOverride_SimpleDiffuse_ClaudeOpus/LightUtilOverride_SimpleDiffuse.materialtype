@@ -1,5 +1,5 @@
 {
-    "description": "Approach B: Simple diffuse using the engine's full PBR pipeline with post-processed output.",
+    "description": "LightUtil Override: Simple diffuse using LightUtil overrides. Custom diffuse function applied per-light via the engine's pipeline.",
     "version": 1,
     "propertyLayout": {
         "groups": [
@@ -25,7 +25,7 @@
     },
     "shaders": [
         {
-            "file": "./ApproachB_SimpleDiffuse.shader"
+            "file": "./LightUtilOverride_SimpleDiffuse.shader"
         },
         {
             "file": "Shaders/Depth/DepthPass.shader"

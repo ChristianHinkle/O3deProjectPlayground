@@ -1,5 +1,5 @@
 {
-    "Source": "ApproachB_SimpleDiffuse.azsl",
+    "Source": "PipelinePostProcess_SimpleCelShaded.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,

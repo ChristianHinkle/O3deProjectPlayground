@@ -1,5 +1,5 @@
 {
-    "description": "Approach B+: Cel-shading via LightUtil overrides. Per-light cel-shading with engine pipeline fallback for unoverridden light types.",
+    "description": "Pipeline Post-Process: Simple cel-shading by post-processing the engine's full PBR lighting result.",
     "version": 1,
     "propertyLayout": {
         "groups": [
@@ -35,7 +35,7 @@
     },
     "shaders": [
         {
-            "file": "./ApproachBPlus_SimpleCelShaded.shader"
+            "file": "./PipelinePostProcess_SimpleCelShaded.shader"
         },
         {
             "file": "Shaders/Depth/DepthPass.shader"
