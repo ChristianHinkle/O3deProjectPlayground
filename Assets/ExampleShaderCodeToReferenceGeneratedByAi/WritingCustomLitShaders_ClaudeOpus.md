@@ -427,6 +427,34 @@ With this approach you can:
 
 New light types added by the engine fall back to PBR defaults until you write a custom util for them.
 
+#### How Cast Shadows Work with LightUtil Overrides
+
+A common concern: "if I'm overriding the lighting math, do I lose cast shadows?" No. Shadows are computed by the engine *before* your `Apply()` is called.
+
+The engine's forward pass light functions (e.g., `ForwardPassDirectionalLights.azsli`, `ForwardPassPointLights.azsli`) sample shadow maps, compute visibility, and pass the result as the `litRatio` parameter to your `Apply()`:
+
+```hlsl
+// Inside the engine's ForwardPassDirectionalLights.azsli:
+litRatio = DirectionalLightShadow::GetVisibility(shadowIndex, surface.position, surface.vertexNormal, screenUv);
+
+// Then the engine calls YOUR overridden Apply():
+light.Apply(srgLight, surface, currentLitRatio, lightingData);
+```
+
+Your custom `Apply()` receives `litRatio` (0.0 = fully shadowed, 1.0 = fully lit) and simply multiplies by it:
+
+```hlsl
+lightingData.diffuseLighting += CelShadeDiffuse(surface, dirToLight, lightIntensity) * litRatio;
+```
+
+You never sample a shadow map, set up cascades, or compute visibility. The engine handles all of that. Your override only controls *how the light affects the surface* -- the infrastructure around it (shadow sampling, light culling, iteration) stays intact.
+
+This is also why mixing manual light loops with the engine pipeline would double-count lights. `ApplyDirectLighting()` already iterates over all light types and calls your overridden `Apply()`. If you also manually looped over `ViewSrg::m_pointLights`, those lights would be applied twice -- once by the engine (with shadows, culling, and your override) and once by your manual loop (without any of that).
+
+The `Apply()` method is a precise insertion point: the engine has already found the light, culled it, and computed its shadow. Your code only decides what to do with that information. That's why the LightUtil Override gets shadows, culling, and every other pipeline feature for free -- it's not replacing the pipeline, it's plugging into it.
+
+Cast shadows and cel-shading compose naturally because they're both just multipliers on the same diffuse accumulator. A shadowed pixel has low `litRatio`, which reduces the diffuse contribution, which reduces the luminance, which the post-process quantization pushes into the "unlit" band. No special integration needed.
+
 #### Combining LightUtil Override with Post-Process (Recommended for NPR)
 
 For NPR styles like cel-shading, a pure LightUtil Override has a problem: any light type you *didn't* override (capsule, quad, polygon, or future types) contributes smooth PBR diffuse, which looks visually inconsistent next to your cel-shaded lights.
