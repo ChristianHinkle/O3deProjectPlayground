@@ -1,5 +1,5 @@
 {
-    "materialType": "MySimpleDiffuseMaterial.materialtype",
+    "materialType": "ManualLightLoop_SimpleDiffuse.materialtype",
     "materialTypeVersion": 2,
     "propertyValues": {
         "settings.baseColor": [1.0, 1.0, 1.0]

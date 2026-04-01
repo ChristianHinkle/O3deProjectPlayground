@@ -7,7 +7,7 @@
 #include <Atom/Features/InstancedTransforms.azsli>
 #include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
 
-ShaderResourceGroup MySimpleCelShadedMaterialSrg : SRG_PerMaterial
+ShaderResourceGroup ManualLightLoop_SimpleCelShadedSrg : SRG_PerMaterial
 {
     float3 m_litColor;
     float3 m_unlitColor;
@@ -80,8 +80,8 @@ ForwardPassOutput MainPS(VSOutput psInput)
     ForwardPassOutput psOutput;
 
     float3 normal = normalize(psInput.m_worldNormal);
-    float3 litColor = MySimpleCelShadedMaterialSrg::m_litColor;
-    float3 unlitColor = MySimpleCelShadedMaterialSrg::m_unlitColor;
+    float3 litColor = ManualLightLoop_SimpleCelShadedSrg::m_litColor;
+    float3 unlitColor = ManualLightLoop_SimpleCelShadedSrg::m_unlitColor;
 
     // Accumulate a scalar light intensity from all sources, then step it into 2 bands.
     float lightAmount = 0.0;

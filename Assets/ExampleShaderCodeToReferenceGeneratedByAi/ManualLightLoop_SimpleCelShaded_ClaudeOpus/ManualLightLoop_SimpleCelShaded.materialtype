@@ -35,7 +35,7 @@
     },
     "shaders": [
         {
-            "file": "./MySimpleCelShadedMaterial.shader"
+            "file": "./ManualLightLoop_SimpleCelShaded.shader"
         },
         {
             "file": "Shaders/Depth/DepthPass.shader"

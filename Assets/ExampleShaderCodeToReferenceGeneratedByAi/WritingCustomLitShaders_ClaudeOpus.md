@@ -290,7 +290,7 @@ Since our forward pass *already* applies IBL, you could get double-brightness in
 
 There are three broad strategies for implementing non-standard shading models. Each trades off artistic control against maintenance burden and future-proofing. Understanding these tradeoffs is important because O3DE's forward+ pipeline is one of the main reasons to use this engine for NPR work.
 
-### Custom Light Loops (directory: `MySimpleDiffuseMaterial_ClaudeOpus`, `MySimpleCelShadedMaterial_ClaudeOpus`)
+### Custom Light Loops (directory: `ManualLightLoop_SimpleDiffuse_ClaudeOpus`, `ManualLightLoop_SimpleCelShaded_ClaudeOpus`)
 
 You read light data directly from the SRGs and write your own shading math per light type.
 

@@ -1,5 +1,5 @@
 {
-    "Source": "MySimpleCelShadedMaterial.azsl",
+    "Source": "ManualLightLoop_SimpleCelShaded.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,

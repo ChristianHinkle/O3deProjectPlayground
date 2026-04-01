@@ -7,7 +7,7 @@
 #include <Atom/Features/InstancedTransforms.azsli>
 #include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
 
-ShaderResourceGroup MySimpleDiffuseMaterialSrg : SRG_PerMaterial
+ShaderResourceGroup ManualLightLoop_SimpleDiffuseSrg : SRG_PerMaterial
 {
     float3 m_baseColor;
 }
@@ -79,7 +79,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
     ForwardPassOutput psOutput;
 
     float3 normal = normalize(psInput.m_worldNormal);
-    float3 albedo = MySimpleDiffuseMaterialSrg::m_baseColor;
+    float3 albedo = ManualLightLoop_SimpleDiffuseSrg::m_baseColor;
 
     float3 diffuse = float3(0.0, 0.0, 0.0);
 

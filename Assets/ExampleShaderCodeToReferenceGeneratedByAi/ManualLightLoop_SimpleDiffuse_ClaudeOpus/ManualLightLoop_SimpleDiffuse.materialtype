@@ -25,7 +25,7 @@
     },
     "shaders": [
         {
-            "file": "./MySimpleDiffuseMaterial.shader"
+            "file": "./ManualLightLoop_SimpleDiffuse.shader"
         },
         {
             "file": "Shaders/Depth/DepthPass.shader"

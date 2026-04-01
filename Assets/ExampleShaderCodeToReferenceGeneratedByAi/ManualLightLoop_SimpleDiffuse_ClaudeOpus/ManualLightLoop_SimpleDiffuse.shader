@@ -1,5 +1,5 @@
 {
-    "Source": "MySimpleDiffuseMaterial.azsl",
+    "Source": "ManualLightLoop_SimpleDiffuse.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,
