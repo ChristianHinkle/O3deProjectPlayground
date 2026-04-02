@@ -1,0 +1,34 @@
+// Stencil-aware SSAO modulation shader.
+// Replaces the engine's compute-based ModulateTexture with a fullscreen triangle
+// fragment shader that supports stencil testing. Pixels that fail the stencil test
+// (e.g., materials that didn't write stencil bit 0x80) are skipped entirely.
+//
+// The shader outputs the SSAO value as a color. Multiplicative blending in the
+// render state handles the actual diffuse *= ssao operation. This avoids needing
+// to read and write the diffuse buffer simultaneously.
+
+#include <Atom/Features/SrgSemantics.azsli>
+#include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
+#include <Atom/Features/PostProcessing/FullscreenPixelInfo.azsli>
+
+ShaderResourceGroup PassSrg : SRG_PerPass
+{
+    Texture2D<float> m_ssao;
+    Sampler m_linearSampler
+    {
+        MinFilter = Linear;
+        MagFilter = Linear;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+}
+
+PSOutput MainPS(VSOutput IN)
+{
+    float ssao = PassSrg::m_ssao.Sample(PassSrg::m_linearSampler, IN.m_texCoord).r;
+
+    PSOutput OUT;
+    OUT.m_color = float4(ssao, ssao, ssao, 1.0);
+    return OUT;
+}

@@ -1,4 +1,9 @@
 {
+    // LightUtil Override: 2-band cel-shaded forward pass shader.
+    // Overrides per-light shading via engine LightUtil #ifndef hooks.
+    // WriteMask 0x7F: avoids writing stencil bit 0x80 for SSAO exclusion.
+    // DrawList "forward" registers this for the forward lighting pass.
+
     "Source": "LightUtilOverride_SimpleCelShaded.azsl",
     "DepthStencilState": {
         "Depth": {
@@ -8,7 +13,7 @@
         "Stencil": {
             "Enable": true,
             "ReadMask": "0x00",
-            "WriteMask": "0xFF",
+            "WriteMask": "0x7F",
             "FrontFace": {
                 "Func": "Always",
                 "DepthFailOp": "Keep",

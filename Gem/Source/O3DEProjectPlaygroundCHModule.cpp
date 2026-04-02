@@ -4,6 +4,7 @@
 
 #include "O3DEProjectPlaygroundCHSystemComponent.h"
 #include "YoComponent.h"
+#include "ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionSystemComponent_ClaudeOpus.h"
 
 #include <O3DEProjectPlaygroundCH/O3DEProjectPlaygroundCHTypeIds.h>
 
@@ -23,6 +24,7 @@ namespace O3DEProjectPlaygroundCH
             m_descriptors.insert(m_descriptors.end(), {
                 O3DEProjectPlaygroundCHSystemComponent::CreateDescriptor(),
                 YoComponent::CreateDescriptor(),
+                SsaoStencilExclusionSystemComponent_ClaudeOpus::CreateDescriptor(),
             });
         }
 
@@ -34,6 +36,7 @@ namespace O3DEProjectPlaygroundCH
             return AZ::ComponentTypeList{
                 azrtti_typeid<O3DEProjectPlaygroundCHSystemComponent>(),
                 azrtti_typeid<YoComponent>(),
+                azrtti_typeid<SsaoStencilExclusionSystemComponent_ClaudeOpus>(),
             };
         }
     };

@@ -1,0 +1,65 @@
+{
+    // SSAO Stencil Restore Pass
+    //
+    // Fullscreen triangle pass that restores saved diffuse values for stencil-excluded
+    // pixels AFTER the SSAO pass has run. This undoes SSAO darkening for those pixels.
+    //
+    // Reads from the temp buffer written by SsaoStencilSave_ClaudeOpus.pass and
+    // overwrites the SSAO-darkened diffuse buffer. The stencil check ensures only
+    // excluded pixels are overwritten -- included pixels keep their SSAO darkening.
+    //
+    // DiffuseInputOutput uses LoadAction: Load to preserve pixels that are NOT overwritten
+    // (i.e., pixels where the shader discards due to stencil bit 0x80 being set).
+    //
+    // NOTE: Reading stencil as a texture works on Vulkan but not on O3DE's DX12 backend.
+    // Use --rhi=vulkan when running the editor.
+
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "PassAsset",
+    "ClassData": {
+        "PassTemplate": {
+            "Name": "SsaoStencilRestoreTemplate_ClaudeOpus",
+            "PassClass": "FullScreenTriangle",
+            "Slots": [
+                {
+                    // The saved diffuse buffer from the save pass
+                    // (connected to SsaoStencilSave_ClaudeOpus.SavedOutput in C++)
+                    "Name": "SourceInput",
+                    "SlotType": "Input",
+                    "ScopeAttachmentUsage": "Shader"
+                },
+                {
+                    // Stencil texture for identifying which pixels to restore.
+                    // Same depth-stencil buffer, same AspectFlags as the save pass.
+                    "Name": "StencilInput",
+                    "SlotType": "Input",
+                    "ScopeAttachmentUsage": "Shader",
+                    "ImageViewDesc": {
+                        "AspectFlags": [
+                            "Stencil"
+                        ]
+                    }
+                },
+                {
+                    // The diffuse buffer after SSAO modulation.
+                    // LoadAction: Load preserves SSAO-darkened values for included pixels.
+                    // Excluded pixels are overwritten with saved pre-SSAO values.
+                    // (Connected to Ssao.Output in C++)
+                    "Name": "DiffuseInputOutput",
+                    "SlotType": "InputOutput",
+                    "ScopeAttachmentUsage": "RenderTarget",
+                    "LoadStoreAction": {
+                        "LoadAction": "Load"
+                    }
+                }
+            ],
+            "PassData": {
+                "$type": "FullscreenTrianglePassData",
+                "ShaderAsset": {
+                    "FilePath": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/PostProcessing_ClaudeOpus/SsaoStencilCopy_ClaudeOpus.shader"
+                }
+            }
+        }
+    }
+}

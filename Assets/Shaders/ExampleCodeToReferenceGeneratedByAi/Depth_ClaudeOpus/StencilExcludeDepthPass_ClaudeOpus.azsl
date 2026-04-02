@@ -1,0 +1,4 @@
+// Wrapper that includes the engine's DepthPass shader.
+// Exists so StencilExcludeDepthPass_ClaudeOpus.shader can reference a local Source file
+// while using the engine's actual depth pass shader code.
+#include <Atom/Feature/Common/Assets/Shaders/Depth/DepthPass.azsl>

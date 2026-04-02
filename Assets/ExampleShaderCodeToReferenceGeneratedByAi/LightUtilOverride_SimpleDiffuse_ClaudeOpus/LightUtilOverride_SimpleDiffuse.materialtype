@@ -28,7 +28,7 @@
             "file": "./LightUtilOverride_SimpleDiffuse.shader"
         },
         {
-            "file": "Shaders/Depth/DepthPass.shader"
+            "file": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.shader"
         },
         {
             "file": "Shaders/Shadow/Shadowmap.shader"

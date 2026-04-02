@@ -1,0 +1,90 @@
+{
+    // SSAO Stencil Save Pass
+    //
+    // Fullscreen triangle pass that copies diffuse color for stencil-excluded pixels
+    // to a temporary render target BEFORE the SSAO pass runs.
+    //
+    // The shader reads the stencil buffer as a texture (via AspectFlags: Stencil) and
+    // discards pixels where stencil bit 0x80 is set (those pixels should receive SSAO).
+    // Only pixels WITHOUT bit 0x80 are copied to the temp buffer.
+    //
+    // The temp buffer ("StencilSavedDiffuse") is a transient image created by this pass,
+    // sized and formatted to match the source diffuse buffer.
+    //
+    // NOTE: Reading stencil as a texture works on Vulkan but not on O3DE's DX12 backend.
+    // Use --rhi=vulkan when running the editor.
+    //
+    // Paired with SsaoStencilRestore_ClaudeOpus.pass which reads the saved data after SSAO.
+
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "PassAsset",
+    "ClassData": {
+        "PassTemplate": {
+            "Name": "SsaoStencilSaveTemplate_ClaudeOpus",
+            "PassClass": "FullScreenTriangle",
+            "Slots": [
+                {
+                    // The diffuse buffer to save FROM (connected to SubsurfaceScatteringPass.Output in C++)
+                    "Name": "SourceInput",
+                    "SlotType": "Input",
+                    "ScopeAttachmentUsage": "Shader"
+                },
+                {
+                    // The depth-stencil buffer read as a stencil texture.
+                    // AspectFlags: Stencil creates a view into just the stencil plane.
+                    // Auto-binds to PassSrg::m_stencil in the shader.
+                    "Name": "StencilInput",
+                    "SlotType": "Input",
+                    "ScopeAttachmentUsage": "Shader",
+                    "ImageViewDesc": {
+                        "AspectFlags": [
+                            "Stencil"
+                        ]
+                    }
+                },
+                {
+                    // Output: the temp buffer that stores saved diffuse values.
+                    // Connected internally to the "StencilSavedDiffuse" transient image below.
+                    "Name": "SavedOutput",
+                    "SlotType": "Output",
+                    "ScopeAttachmentUsage": "RenderTarget"
+                }
+            ],
+            "ImageAttachments": [
+                {
+                    // Transient image that stores saved diffuse for stencil-excluded pixels.
+                    // Automatically sized and formatted to match the SourceInput (diffuse buffer).
+                    // Only exists for the duration between save and restore passes.
+                    "Name": "StencilSavedDiffuse",
+                    "SizeSource": {
+                        "Source": {
+                            "Pass": "This",
+                            "Attachment": "SourceInput"
+                        }
+                    },
+                    "FormatSource": {
+                        "Pass": "This",
+                        "Attachment": "SourceInput"
+                    }
+                }
+            ],
+            "Connections": [
+                {
+                    // Wire the SavedOutput slot to our transient image
+                    "LocalSlot": "SavedOutput",
+                    "AttachmentRef": {
+                        "Pass": "This",
+                        "Attachment": "StencilSavedDiffuse"
+                    }
+                }
+            ],
+            "PassData": {
+                "$type": "FullscreenTrianglePassData",
+                "ShaderAsset": {
+                    "FilePath": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/PostProcessing_ClaudeOpus/SsaoStencilCopy_ClaudeOpus.shader"
+                }
+            }
+        }
+    }
+}

@@ -6,4 +6,8 @@ set(FILES
     Source/O3DEProjectPlaygroundCHSystemComponent.h
     Source/YoComponent.cpp
     Source/YoComponent.h
+    Source/ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionFeatureProcessor_ClaudeOpus.cpp
+    Source/ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionFeatureProcessor_ClaudeOpus.h
+    Source/ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionSystemComponent_ClaudeOpus.cpp
+    Source/ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionSystemComponent_ClaudeOpus.h
 )

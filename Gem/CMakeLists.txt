@@ -34,6 +34,7 @@ ly_add_target(
         PRIVATE
             AZ::AzGameFramework
             Gem::Atom_AtomBridge.Static
+            Gem::Atom_RPI.Public
 )
 
 ly_add_target(

@@ -5,6 +5,7 @@
 // The cel-shading is applied as a post-process: compute standard PBR diffuse, convert to
 // luminance, step into 2 bands, then output lit/unlit colors.
 
+#define FORCE_IBL_IN_FORWARD_PASS 1
 #define FORCE_OPAQUE 1
 
 #include <scenesrg_all.srgi>

@@ -8,7 +8,7 @@
         "Stencil": {
             "Enable": true,
             "ReadMask": "0x00",
-            "WriteMask": "0xFF",
+            "WriteMask": "0x7F",
             "FrontFace": {
                 "Func": "Always",
                 "DepthFailOp": "Keep",

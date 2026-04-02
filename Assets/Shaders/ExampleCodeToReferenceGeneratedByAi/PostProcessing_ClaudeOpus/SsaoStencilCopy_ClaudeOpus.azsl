@@ -1,0 +1,45 @@
+// Fullscreen copy that only processes stencil-excluded pixels based on stencil value.
+// Reads the stencil plane of the depth-stencil buffer as a texture.
+// stencil-included pixels (stencil bit 0x80 set) are discarded.
+//
+// NOTE: Stencil-as-texture reads work on Vulkan but not on O3DE's DX12 backend
+// due to an engine limitation with stencil SRV creation. Use --rhi=vulkan.
+
+#include <Atom/Features/SrgSemantics.azsli>
+#include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
+#include <Atom/Features/PostProcessing/FullscreenPixelInfo.azsli>
+
+ShaderResourceGroup PassSrg : SRG_PerPass
+{
+    Texture2D<float4> m_source;
+    Texture2DMS<uint> m_stencil;
+}
+
+PSOutput MainPS(VSOutput IN)
+{
+    uint2 screenCoords = uint2(IN.m_position.xy);
+
+    // Check ALL MSAA samples. If ANY sample has bit 0x80, this pixel has stencil-included geometry.
+    uint width, height, sampleCount;
+    PassSrg::m_stencil.GetDimensions(width, height, sampleCount);
+
+    bool isPbr = false;
+    for (uint s = 0; s < sampleCount; s++)
+    {
+        uint val = PassSrg::m_stencil.Load(screenCoords, s);
+        if (val & 0x80)
+        {
+            isPbr = true;
+            break;
+        }
+    }
+
+    if (isPbr)
+    {
+        discard;
+    }
+
+    PSOutput OUT;
+    OUT.m_color = PassSrg::m_source.Load(int3(screenCoords, 0));
+    return OUT;
+}

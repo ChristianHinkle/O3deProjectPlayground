@@ -1,0 +1,34 @@
+{
+    // Registers custom pass templates with the O3DE pass system.
+    // These templates are loaded in our system component's OnReadyLoadTemplatesEvent handler
+    // via PassSystemInterface::LoadPassTemplateMappings().
+    // The "Name" is how C++ and other .pass files reference the template.
+    // The "Path" is the asset-relative path to the .pass file that defines the template.
+
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "AssetAliasesSourceData",
+    "ClassData": {
+        "AssetPaths": [
+            {
+                // Stencil-aware SSAO modulation pass (replaces the engine's compute-based
+                // ModulateTexture with a fullscreen triangle that supports hardware stencil testing).
+                // Not currently used in the active pipeline -- kept as a reference implementation.
+                "Name": "ModulateTextureWithStencilTemplate_ClaudeOpus",
+                "Path": "Assets/Passes/ExampleCodeToReferenceGeneratedByAi/ModulateTextureWithStencil_ClaudeOpus.pass"
+            },
+            {
+                // Save pass: copies diffuse values for stencil-excluded pixels to a temp buffer
+                // BEFORE SSAO runs. Used with SsaoStencilRestore to sandwich the SSAO pass.
+                "Name": "SsaoStencilSaveTemplate_ClaudeOpus",
+                "Path": "Assets/Passes/ExampleCodeToReferenceGeneratedByAi/SsaoStencilSave_ClaudeOpus.pass"
+            },
+            {
+                // Restore pass: overwrites SSAO-darkened diffuse with saved values for
+                // stencil-excluded pixels AFTER SSAO runs. Undoes SSAO for those pixels.
+                "Name": "SsaoStencilRestoreTemplate_ClaudeOpus",
+                "Path": "Assets/Passes/ExampleCodeToReferenceGeneratedByAi/SsaoStencilRestore_ClaudeOpus.pass"
+            }
+        ]
+    }
+}

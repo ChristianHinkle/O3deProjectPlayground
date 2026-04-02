@@ -237,6 +237,180 @@ The engine's lighting functions (`GetDiffuseLighting`, `GetSpecularLighting` in 
 - **`rsqrt(distSq)`**: Reciprocal square root -- faster than `normalize(toLight)` since we already have `distSq` computed and need both the direction and the distance.
 - **`surface.lightingChannels`**: If you use the engine's `Surface` struct and lighting pipeline, you **must** set `surface.lightingChannels = 0xFFFFFFFF` (or the appropriate channel mask). Every light type checks `IsSameLightChannel(light.m_lightingChannelMask, surface.lightingChannels)` before applying. If `lightingChannels` is uninitialized (zero), the bitwise AND is always zero, and **all direct lights are silently skipped**. The surface will appear to receive only IBL/skylight. This field has no default value in the `Surface` class.
 
+## Considerations for Custom Shaders Using the Engine Pipeline
+
+### FORCE_IBL_IN_FORWARD_PASS (Recommended for All Custom Shaders)
+
+Shaders that use the engine's lighting pipeline with `FORCE_OPAQUE` (the Pipeline Post-Process and LightUtil Override approaches) should define `FORCE_IBL_IN_FORWARD_PASS 1` before `FORCE_OPAQUE`:
+
+```hlsl
+#define FORCE_IBL_IN_FORWARD_PASS 1
+#define FORCE_OPAQUE 1
+```
+
+**Why this matters:** With `FORCE_OPAQUE` alone, the forward pass does NOT apply diffuse IBL. Instead, the engine defers IBL to the `DiffuseGlobalFullscreen` post-pass, which runs after the forward pass. That post-pass reads the `m_albedo` render target, multiplies it by the environment cubemap, and adds the result to the diffuse buffer. This happens entirely outside your shader -- your cel-shading quantization, your custom diffuse function, none of it processes the IBL contribution. The ambient light arrives as smooth, physically-based lighting on top of your stylized result.
+
+With `FORCE_IBL_IN_FORWARD_PASS`, the IBL is applied inside your forward pass via `ApplyIblForward()`. It accumulates into `lightingData.diffuseLighting` alongside all direct lights. Your post-process quantization or custom shading math then processes the IBL the same as any other light source. For cel-shading, this means the ambient light gets quantized into the same lit/unlit bands as everything else, rather than appearing as a separate smooth layer.
+
+This applies regardless of stencil-based SSAO exclusion. Even without any SSAO work, custom shaders that want full control over how ALL light (including ambient/IBL) affects the final look should use this define.
+
+The Manual Light Loop approach doesn't need this because it samples the IBL cubemap directly in its own shader code.
+
+## Per-Material SSAO Exclusion
+
+### The Problem
+
+O3DE's SSAO computes ambient occlusion from the depth buffer and multiplies it into the diffuse buffer for every pixel. There's no built-in per-material opt-out. For custom-shaded materials (cel-shading, stylized looks, etc.), this introduces physically-based occlusion darkening that conflicts with the intended visual.
+
+### How SSAO Flows Through the Pipeline
+
+Understanding why this is hard requires understanding where SSAO sits in the pipeline:
+
+```
+Forward Pass (MSAA) → writes diffuse, specular, albedo, normal, depth-stencil
+     ↓
+DiffuseGlobalFullscreen (MSAA) → adds IBL to diffuse (stencil-tested, bit 0x80)
+     ↓
+Reflections, SkyBox, ReflectionComposite (MSAA)
+     ↓
+MSAAResolveDiffuse → resolves MSAA diffuse to non-MSAA          ← MSAA boundary
+MSAAResolveSpecular → resolves MSAA specular to non-MSAA
+     ↓
+SubsurfaceScattering (non-MSAA)
+     ↓
+SsaoParent (non-MSAA):
+  ├─ DepthDownsample → SsaoCompute → SsaoBlur → Upsample
+  └─ ModulateWithSsao (ComputePass) → diffuse *= ssao           ← the problem
+     ↓
+DiffuseSpecularMerge → final = diffuse + specular
+```
+
+The `ModulateWithSsao` pass is a **ComputePass** that reads the SSAO texture and writes `diffuse *= ssao` in-place. Compute passes have no stencil testing capability. The pass darkens every pixel unconditionally.
+
+### The Depth-Stencil Buffer
+
+The depth and stencil data share a single GPU texture (`D32_FLOAT_S8X24_UINT` -- 32 bits depth + 8 bits stencil). The engine writes stencil during the forward pass using the `DepthStencilState` from each material's `.shader` file. Different materials can write different stencil values via `WriteMask` and `PassOp: Replace`.
+
+Stencil bit 0x80 (`UseDiffuseGIPass`, defined in `RenderCommon.h`) is the engine's marker for pixels that should receive diffuse GI and other PBR post-processing. Passes like `DiffuseGlobalFullscreen` and `ReflectionComposite` use hardware stencil testing against this bit to decide which pixels to process.
+
+The depth-stencil is MSAA throughout the pipeline -- it's never resolved. This matters because hardware stencil testing requires the depth-stencil and render targets to have matching MSAA sample counts.
+
+### The MSAA Constraint
+
+The SSAO modulation happens AFTER the MSAA resolve. At that point, the diffuse buffer is non-MSAA but the depth-stencil is still MSAA. This means you cannot bind the depth-stencil as a `DepthStencil` attachment alongside the non-MSAA diffuse render target -- the GPU rejects the MSAA mismatch.
+
+This is why the engine's SSAO modulation uses a ComputePass (no render targets, no MSAA constraint) rather than a fullscreen triangle with stencil testing.
+
+### Approach 1: Disable SSAO Globally
+
+The simplest option. Disable SSAO in the level's PostFX settings or via C++ by disabling the `ModulateWithSsao` pass. No stencil work needed. Acceptable if the project is fully stylized with no PBR materials that need AO.
+
+### Approach 2: Stencil Save/Restore via C++ Pipeline Injection (Active Implementation)
+
+The active approach in this project. Instead of modifying the SSAO pass itself, we **sandwich** the Ssao parent pass with save/restore passes that preserve excluded pixels:
+
+1. **Save pass** (before Ssao): Copies diffuse for excluded pixels to a temp buffer
+2. **Ssao runs normally**: Darkens everything including excluded pixels
+3. **Restore pass** (after Ssao): Overwrites excluded pixels' diffuse with saved pre-SSAO values
+
+The save/restore passes identify excluded pixels by reading the stencil buffer as a **shader texture** (not hardware stencil testing), which avoids the MSAA mismatch. The stencil plane is bound via `ImageViewDesc` with `"AspectFlags": ["Stencil"]` in the pass template, and read as `Texture2DMS<uint>` in the shader.
+
+**Stencil marking:** Materials that want SSAO exclusion use `WriteMask: 0x7F` in both their forward pass and depth pass `.shader` files. This prevents writing stencil bit 0x80. The save/restore shader checks `stencilValue & 0x80`: if set, the pixel is PBR (discard, let SSAO apply); if not set, the pixel is excluded (copy it).
+
+**The depth pass matters:** The depth prepass runs before the forward pass and also writes stencil. The engine's default `DepthPass.shader` writes stencil for all geometry. If it writes bit 0x80 before the forward pass runs, the forward pass `WriteMask: 0x7F` preserves that bit (it can't clear bits it doesn't write). The fix: a custom depth pass `.shader` (`StencilExcludeDepthPass_ClaudeOpus.shader`) that also uses `WriteMask: 0x7F`. It references the engine's `DepthPass.azsl` via an `#include` wrapper -- zero duplicated shader code, only the JSON stencil config differs.
+
+**IBL compensation:** Stencil bit 0x80 is also used by `DiffuseGlobalFullscreen` to apply IBL. Excluded pixels (without bit 0x80) are skipped by that pass, losing ambient light. The fix: add `#define FORCE_IBL_IN_FORWARD_PASS 1` to the excluded material's `.azsl` file, which tells the forward pass to apply IBL directly instead of deferring to the fullscreen post-pass.
+
+**DX12 limitation:** Reading the stencil plane as a shader texture works on **Vulkan** but not on O3DE's DX12 backend. The DX12 backend doesn't correctly create the Shader Resource View for the stencil plane of `D32_FLOAT_S8X24_UINT`. This is an engine-level issue, not a fundamental DX12 limitation (DX12 supports stencil SRVs via `DXGI_FORMAT_X32_TYPELESS_G8X24_UINT`). Use `--rhi=vulkan` when running the editor.
+
+**Files:**
+
+| File | Purpose |
+|---|---|
+| `Shaders/PostProcessing_ClaudeOpus/SsaoStencilCopy_ClaudeOpus.azsl` | Fullscreen copy shader that reads stencil as texture, discards included pixels |
+| `Shaders/PostProcessing_ClaudeOpus/SsaoStencilCopy_ClaudeOpus.shader` | Shader config (no hardware stencil, no blend -- just copy) |
+| `Passes/SsaoStencilSave_ClaudeOpus.pass` | Save pass template with transient temp image |
+| `Passes/SsaoStencilRestore_ClaudeOpus.pass` | Restore pass template reading from temp, writing to diffuse |
+| `Passes/PassTemplates_ClaudeOpus.azasset` | Registers all custom pass templates with the pass system |
+| `Shaders/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.shader` | Custom depth pass with WriteMask 0x7F |
+| `Shaders/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.azsl` | Wrapper that #includes the engine's DepthPass.azsl |
+| `Gem/Source/SsaoStencilExclusionFeatureProcessor_ClaudeOpus.*` | C++ FeatureProcessor that injects save/restore passes |
+
+### Approach 3: Replace ModulateWithSsao with Stencil-Aware Version (Reference Only)
+
+An alternative design that replaces the engine's compute-based SSAO modulation with a fullscreen triangle that uses hardware stencil testing and multiplicative blending. The shader outputs the SSAO value; the blend state computes `dest * src`. The stencil test (ReadMask 0x80, Func Equal, StencilRef 128) skips excluded pixels.
+
+This approach requires wiring the depth-stencil into the SsaoParent pass hierarchy, which is difficult to do at runtime without duplicating engine pass template JSON files. The files `ModulateTextureWithStencil_ClaudeOpus.*` implement this as a reference but it's not used in the active pipeline.
+
+### Approach 4: Normal Buffer Detection (Simplest, Both Backends)
+
+Instead of stencil, check the normal buffer. Custom materials that write `m_normal = float4(0,0,0,0)` can be identified by `dot(normal.rgb, normal.rgb) < threshold`. Works on both DX12 and Vulkan with no stencil configuration needed.
+
+The tradeoff: this couples SSAO exclusion to the normal output. If a custom material later wants to output encoded normals (for SSAO edge detection, screen-space reflections, etc.), the detection breaks. It's a convention hack, not an architectural solution. Fine for projects where excluded materials will never need screen-space normal-based effects.
+
+### Comparison
+
+| | Disable Globally | Stencil Save/Restore | Replace Modulation Pass | Normal Buffer |
+|---|---|---|---|---|
+| Per-material control | No | Yes | Yes | Yes |
+| DX12 support | Yes | Vulkan only (engine bug) | Requires pass JSON overrides | Yes |
+| Maintenance | None | Low (C++ + pass templates) | High (JSON pass overrides) | Lowest |
+| Future-proof | N/A | Stencil is architectural | Same | Fragile convention |
+| Engine code duplication | None | None (C++ injects passes) | ~670 lines of JSON | None |
+
+## Modifying the Render Pipeline from C++ (FeatureProcessors)
+
+### Why C++ Instead of JSON Pass Overrides
+
+O3DE's pass system is data-driven: `.pass` JSON files define pass templates, and the pipeline is built from them. To modify the pipeline, the obvious approach is to override the JSON files. But this has serious problems:
+
+- **Full file duplication.** Overriding `SsaoParent.pass` or `OpaqueParent.pass` requires copying the entire engine file (~140 or ~530 lines) and making small changes. If the engine updates the file, your override is stale.
+- **Name collisions.** Project-level pass files in `Assets/Passes/` get registered under a different asset catalog path (`assets/passes/`) than engine files (`passes/`). They don't actually override -- they coexist. Putting files in `Gem/Assets/Passes/` does override (same catalog path, higher scan order), but risks replacing engine files entirely (e.g., `PassTemplates.azasset` would replace ALL engine pass template registrations).
+- **Templates can't be modified after instantiation.** `RemovePassTemplate` fails if any live passes reference the template. By the first tick, the pipeline is already built from templates.
+
+The C++ approach avoids all of this: register custom pass templates via the asset system, then inject passes into the live pipeline during construction.
+
+### The FeatureProcessor Pattern
+
+O3DE's `FeatureProcessor` is the standard way for gems to participate in rendering. The key method for pipeline modification is `AddRenderPasses(RenderPipeline* pipeline)`, which is called during pipeline construction. At this point, passes can be added via `pipeline->AddPassBefore()` / `AddPassAfter()` and they become part of the normal build/initialization cycle.
+
+```cpp
+class SsaoStencilExclusionFeatureProcessor : public AZ::RPI::FeatureProcessor
+{
+    void AddRenderPasses(AZ::RPI::RenderPipeline* renderPipeline) override
+    {
+        // Build PassRequest programmatically
+        AZ::RPI::PassRequest saveRequest;
+        saveRequest.m_passName = AZ::Name("SsaoStencilSave_ClaudeOpus");
+        saveRequest.m_templateName = AZ::Name("SsaoStencilSaveTemplate_ClaudeOpus");
+        // ... add connections ...
+
+        auto savePass = passSystem->CreatePassFromRequest(&saveRequest);
+        renderPipeline->AddPassBefore(savePass, AZ::Name("Ssao"));
+    }
+};
+```
+
+### Registration and Activation
+
+The FeatureProcessor must be:
+
+1. **Reflected** in the system component's `Reflect()` so the factory can create instances.
+2. **Registered** with `FeatureProcessorFactory::Get()->RegisterFeatureProcessor<T>()` in the system component's `Activate()`.
+3. **Enabled on a scene** via `scene->EnableFeatureProcessor<T>()`. This triggers `AddRenderPasses` for existing pipelines. Use `TickBus` to wait for the scene to exist, then enable.
+
+Pass templates are loaded via `PassSystemInterface::LoadPassTemplateMappings()` in an `OnReadyLoadTemplatesEvent` handler, which fires during pass system initialization. The `.azasset` file maps template names to `.pass` files.
+
+### Timing
+
+| Event | What's available | What to do |
+|---|---|---|
+| `OnReadyLoadTemplatesEvent` | Pass system ready, engine templates may not be loaded yet | Load YOUR pass templates only |
+| `OnTick` (first tick) | Templates loaded, pipeline built | Enable FeatureProcessor on scene |
+| `AddRenderPasses` (from FeatureProcessor) | Pipeline being constructed | Insert passes via `AddPassBefore`/`AddPassAfter` |
+
+`InsertChild` on a live, already-built pipeline does NOT work -- the parent pass's `QueueForBuildAndInitialization` rebuilds from the template and removes dynamically inserted children. `AddRenderPasses` is called during construction, before the first frame, so inserted passes are part of the normal build cycle.
+
 ## Emissive Surfaces and Global Illumination
 
 ### Do Emissive Materials Light Nearby Surfaces?

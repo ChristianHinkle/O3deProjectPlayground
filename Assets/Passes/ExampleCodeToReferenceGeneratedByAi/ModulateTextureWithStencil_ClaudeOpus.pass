@@ -1,0 +1,63 @@
+{
+    // Stencil-Aware SSAO Modulation Pass (Reference Implementation)
+    //
+    // Alternative to the engine's compute-based ModulateTexture pass. This version uses a
+    // fullscreen triangle with hardware stencil testing to only apply SSAO to pixels where
+    // stencil bit 0x80 is set. Pixels without bit 0x80 are skipped entirely.
+    //
+    // This pass was designed to replace the engine's ModulateWithSsao inside SsaoParent,
+    // but is NOT currently used in the active pipeline due to the complexity of wiring
+    // it into the live pass hierarchy. Kept as a reference for future use.
+    //
+    // The active SSAO exclusion approach uses save/restore passes instead
+    // (SsaoStencilSave + SsaoStencilRestore).
+
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "PassAsset",
+    "ClassData": {
+        "PassTemplate": {
+            "Name": "ModulateTextureWithStencilTemplate_ClaudeOpus",
+            "PassClass": "FullScreenTriangle",
+            "Slots": [
+                {
+                    // The SSAO texture (output of the Upsample pass inside SsaoParent)
+                    "Name": "SsaoInput",
+                    "SlotType": "Input",
+                    "ScopeAttachmentUsage": "Shader"
+                },
+                {
+                    // The diffuse buffer to modulate. LoadAction: Load preserves existing values
+                    // so the multiplicative blend (dest * src) can darken them.
+                    "Name": "InputOutput",
+                    "SlotType": "InputOutput",
+                    "ScopeAttachmentUsage": "RenderTarget",
+                    "LoadStoreAction": {
+                        "LoadAction": "Load"
+                    }
+                },
+                {
+                    // Depth-stencil for hardware stencil testing.
+                    // StencilRef 128 (0x80) with Func Equal means: only render where bit 0x80 is set.
+                    "Name": "DepthStencilInputOutput",
+                    "SlotType": "InputOutput",
+                    "ScopeAttachmentUsage": "DepthStencil",
+                    "LoadStoreAction": {
+                        "LoadAction": "Load",
+                        "StoreAction": "Store"
+                    }
+                }
+            ],
+            "PassData": {
+                "$type": "FullscreenTrianglePassData",
+                "ShaderAsset": {
+                    "FilePath": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/PostProcessing_ClaudeOpus/ModulateTextureWithStencil_ClaudeOpus.shader"
+                },
+                // 128 = 0x80 = UseDiffuseGIPass stencil bit.
+                // Combined with the shader's stencil Func: Equal, this means
+                // SSAO modulation only applies to pixels with this bit set.
+                "StencilRef": 128
+            }
+        }
+    }
+}

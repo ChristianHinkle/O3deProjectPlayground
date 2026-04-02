@@ -5,6 +5,7 @@
 // engine's attenuation, light culling, and pipeline infrastructure.
 // Capsule, quad, and polygon lights fall back to PBR defaults automatically.
 
+#define FORCE_IBL_IN_FORWARD_PASS 1
 #define FORCE_OPAQUE 1
 
 #include <scenesrg_all.srgi>

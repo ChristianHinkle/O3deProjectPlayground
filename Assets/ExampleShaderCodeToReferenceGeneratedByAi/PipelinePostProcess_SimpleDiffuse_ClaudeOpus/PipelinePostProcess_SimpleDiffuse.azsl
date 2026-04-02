@@ -4,6 +4,7 @@
 // Supports ALL light types, shadows, decals, IBL, and future engine additions automatically.
 // Equivalent to a non-metallic PBR material with no specular highlights.
 
+#define FORCE_IBL_IN_FORWARD_PASS 1
 #define FORCE_OPAQUE 1
 
 #include <scenesrg_all.srgi>

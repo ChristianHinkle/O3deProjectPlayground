@@ -11,6 +11,7 @@
 // Key advantage over Pipeline Post-Process: per-light control. Each light individually gets
 // cel-shaded rather than post-processing the aggregate result.
 
+#define FORCE_IBL_IN_FORWARD_PASS 1
 #define FORCE_OPAQUE 1
 
 #include <scenesrg_all.srgi>

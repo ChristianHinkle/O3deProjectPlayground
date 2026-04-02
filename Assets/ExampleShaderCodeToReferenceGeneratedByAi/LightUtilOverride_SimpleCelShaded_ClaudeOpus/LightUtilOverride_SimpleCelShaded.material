@@ -1,4 +1,6 @@
 {
+    // Material instance with default lit (white) and unlit (dark gray) colors.
+
     "materialType": "LightUtilOverride_SimpleCelShaded.materialtype",
     "materialTypeVersion": 1,
     "propertyValues": {
