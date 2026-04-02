@@ -336,27 +336,48 @@ The save/restore passes identify excluded pixels by reading the stencil buffer a
 | `Shaders/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.azsl` | Wrapper that #includes the engine's DepthPass.azsl |
 | `Gem/Source/SsaoStencilExclusionFeatureProcessor_ClaudeOpus.*` | C++ FeatureProcessor that injects save/restore passes |
 
-### Approach 3: Replace ModulateWithSsao with Stencil-Aware Version (Reference Only)
+### Approach 3: Pre-MSAA-Resolve Hardware Stencil Save/Restore (Cross-Platform, Not Yet Implemented)
+
+The approach the engine itself uses for stencil-dependent passes. Move the save pass to BEFORE the MSAA resolve, where both the diffuse buffer and depth-stencil are MSAA. Hardware stencil testing works because the sample counts match. This is how `DiffuseGlobalFullscreen` and `ReflectionComposite` use stencil -- proven on both DX12 and Vulkan, no engine bugs to work around.
+
+**How it would work:**
+
+1. **Save pass** (before MSAA resolve, near DiffuseGlobalFullscreen): A FullscreenTriangle pass with hardware stencil testing against the MSAA depth-stencil. Reads the MSAA diffuse buffer and writes excluded pixels to an MSAA temp buffer. Stencil test (`NotEqual` with ref 0x80) ensures only excluded pixels are processed. Both render target and depth-stencil are MSAA -- no mismatch.
+2. **Temp resolve pass** (alongside MSAAResolveDiffusePass): Resolves the MSAA temp buffer to a non-MSAA texture, same operation the engine performs on diffuse and specular.
+3. **Restore pass** (after Ssao): Reads the resolved non-MSAA temp and overwrites the SSAO-darkened diffuse for excluded pixels. No stencil needed here -- the temp buffer only contains excluded pixels (included pixels were discarded by the save pass's stencil test and are zero). The shader checks for non-zero values to decide what to overwrite.
+
+**Why this works on both backends:** No stencil texture reads. The save pass uses hardware stencil testing (a GPU fixed-function operation that works on all backends). The restore pass doesn't need stencil at all -- it uses the temp buffer contents as the mask.
+
+**Tradeoffs compared to Approach 2:**
+- 3 passes instead of 2 (save + resolve + restore)
+- An MSAA temp buffer (same size as the MSAA diffuse -- large) plus its resolved non-MSAA copy
+- More complex pipeline wiring (passes at two different pipeline stages)
+- But: works on DX12 and Vulkan without any engine fixes
+
+This is the recommended next step for cross-platform support. It can be implemented at the project level using the same FeatureProcessor `AddPassBefore`/`AddPassAfter` pattern.
+
+### Workaround: Normal Buffer Detection (Hacky, Both Backends)
+
+A workaround that avoids stencil entirely by checking the normal render target. Custom materials that write `m_normal = float4(0,0,0,0)` can be identified by `dot(normal.rgb, normal.rgb) < threshold`. This works on both DX12 and Vulkan with no stencil configuration needed.
+
+This is a hack, not an architecture. It works by exploiting the assumption that excluded materials don't need the normal buffer -- encoding "I'm excluded" as the absence of data in an unrelated render target. If a material later needs to output encoded normals (for screen-space reflections, SSAO edge detection, or any future effect that reads the normal buffer), the detection breaks silently. It also prevents excluded materials from ever participating in normal-dependent post-processing. Use this only as a last resort when stencil-based approaches aren't available.
+
+### Approach 4: Replace ModulateWithSsao with Stencil-Aware Version (Reference Only)
 
 An alternative design that replaces the engine's compute-based SSAO modulation with a fullscreen triangle that uses hardware stencil testing and multiplicative blending. The shader outputs the SSAO value; the blend state computes `dest * src`. The stencil test (ReadMask 0x80, Func Equal, StencilRef 128) skips excluded pixels.
 
 This approach requires wiring the depth-stencil into the SsaoParent pass hierarchy, which is difficult to do at runtime without duplicating engine pass template JSON files. The files `ModulateTextureWithStencil_ClaudeOpus.*` implement this as a reference but it's not used in the active pipeline.
 
-### Approach 4: Normal Buffer Detection (Simplest, Both Backends)
-
-Instead of stencil, check the normal buffer. Custom materials that write `m_normal = float4(0,0,0,0)` can be identified by `dot(normal.rgb, normal.rgb) < threshold`. Works on both DX12 and Vulkan with no stencil configuration needed.
-
-The tradeoff: this couples SSAO exclusion to the normal output. If a custom material later wants to output encoded normals (for SSAO edge detection, screen-space reflections, etc.), the detection breaks. It's a convention hack, not an architectural solution. Fine for projects where excluded materials will never need screen-space normal-based effects.
-
 ### Comparison
 
-| | Disable Globally | Stencil Save/Restore | Replace Modulation Pass | Normal Buffer |
+| | Disable Globally | Post-MSAA Stencil Save/Restore (Approach 2) | Pre-MSAA Hardware Stencil (Approach 3) | Replace Modulation Pass (Approach 4) |
 |---|---|---|---|---|
 | Per-material control | No | Yes | Yes | Yes |
-| DX12 support | Yes | Vulkan only (engine bug) | Requires pass JSON overrides | Yes |
-| Maintenance | None | Low (C++ + pass templates) | High (JSON pass overrides) | Lowest |
-| Future-proof | N/A | Stencil is architectural | Same | Fragile convention |
-| Engine code duplication | None | None (C++ injects passes) | ~670 lines of JSON | None |
+| DX12 support | Yes | Vulkan only (engine bug) | Both backends | Requires pass JSON overrides |
+| Passes added | 0 | 2 | 3 | 0 (replaces 1) |
+| Extra VRAM | None | ~32-128MB temp (non-MSAA) | ~64-256MB temp (MSAA) + resolve | None |
+| Maintenance | None | Low (C++ + pass templates) | Moderate (C++ + pass templates) | High (JSON pass overrides) |
+| Engine code duplication | None | None | None | ~670 lines of JSON |
 
 ## Modifying the Render Pipeline from C++ (FeatureProcessors)
 
@@ -410,6 +431,68 @@ Pass templates are loaded via `PassSystemInterface::LoadPassTemplateMappings()` 
 | `AddRenderPasses` (from FeatureProcessor) | Pipeline being constructed | Insert passes via `AddPassBefore`/`AddPassAfter` |
 
 `InsertChild` on a live, already-built pipeline does NOT work -- the parent pass's `QueueForBuildAndInitialization` rebuilds from the template and removes dynamically inserted children. `AddRenderPasses` is called during construction, before the first frame, so inserted passes are part of the normal build cycle.
+
+## The DX12 Stencil Limitation and Path Forward
+
+Two separate problems prevent stencil-based post-processing from working on O3DE's DX12 backend. Understanding them separately is important because they have different solutions.
+
+### Problem 1: No MSAA Stencil Resolve
+
+The depth-stencil buffer is MSAA (multiple samples per pixel) and is never resolved to non-MSAA. The engine resolves diffuse and specular (`MSAAResolveDiffusePass`, `MSAAResolveSpecularPass`) but not depth-stencil. All post-processing after the MSAA resolve (SSAO, bloom, tone mapping, etc.) operates on non-MSAA buffers.
+
+Hardware stencil testing requires the depth-stencil and render targets to have matching MSAA sample counts. Since post-processing render targets are non-MSAA but the depth-stencil is MSAA, you cannot use hardware stencil testing in any post-processing pass. This is why the engine's SSAO modulation uses a ComputePass (no render targets, no MSAA constraint) instead of a fullscreen triangle with stencil.
+
+The engine's stencil-using passes (DiffuseGlobalFullscreen, ReflectionComposite) all run BEFORE the MSAA resolve, where the diffuse buffer is still MSAA and the sample counts match.
+
+**Solution:** Add an `MSAAResolveStencilPass` alongside the existing resolve passes. This pass would read the MSAA stencil and write to a non-MSAA R8_UINT texture (taking sample 0 or the max across samples). Post-processing passes could then read the resolved stencil as a regular texture or use it for hardware stencil testing with matching non-MSAA render targets.
+
+This could be implemented at the project level via a FeatureProcessor-injected pass, using the same `AddPassAfter` pattern. However, the resolve pass itself needs to read the MSAA stencil as a texture -- which leads to Problem 2.
+
+### Problem 2: DX12 Stencil Shader Resource View (SRV) Creation
+
+To read the stencil plane of a `D32_FLOAT_S8X24_UINT` texture as a shader resource, the GPU needs a Shader Resource View (SRV) with a specific format:
+- **DX12**: `DXGI_FORMAT_X32_TYPELESS_G8X24_UINT` -- stencil appears in the `.g` channel of a `uint2`
+- **Vulkan**: `VK_IMAGE_ASPECT_STENCIL_BIT` on the `VkImageView` -- stencil appears as a single `uint`
+
+O3DE's pass system supports requesting a stencil view via `"AspectFlags": ["Stencil"]` in the pass template's `ImageViewDesc`. On Vulkan, this correctly creates a stencil-only image view. On DX12, the view is not created correctly -- stencil reads return garbage/zero.
+
+This is an O3DE engine bug in the DX12 RHI layer, not a fundamental DX12 limitation. DX12 fully supports stencil SRVs. The fix would be in `Gems/Atom/RHI/DX12/Code/Source/` where `ImageView` or `ShaderResourceView` is created from a depth-stencil texture with a stencil aspect flag. The view needs to use `DXGI_FORMAT_X32_TYPELESS_G8X24_UINT` for the stencil plane.
+
+**This single engine fix would unblock stencil texture reads on DX12 for the entire engine**, enabling both the stencil resolve pass (Problem 1's solution) and direct stencil reads in post-processing shaders.
+
+### What This Means in Practice
+
+| | Vulkan | DX12 (current) | DX12 (with engine fix) |
+|---|---|---|---|
+| Hardware stencil test (pre-MSAA resolve) | Works | Works | Works |
+| Hardware stencil test (post-MSAA resolve) | MSAA mismatch | MSAA mismatch | MSAA mismatch |
+| Read stencil as texture | Works | Broken (engine bug) | Works |
+| Stencil resolve pass | Works | Blocked by SRV bug | Works |
+| Per-material SSAO exclusion | Stencil save/restore works | Vulkan only | Full support |
+
+The two problems are independent but compound: even if the stencil resolve pass existed (Problem 1), it couldn't read the MSAA stencil on DX12 (Problem 2). Fixing Problem 2 (the SRV creation bug) unblocks everything -- the resolve pass becomes possible, and direct stencil reads in post-processing become possible.
+
+### Effects That Benefit From Post-MSAA-Resolve Stencil Access
+
+Any post-processing effect that should behave differently per-material:
+
+- **Per-material SSAO exclusion** -- Skip AO for stylized materials.
+- **Selective bloom/DOF/color grading** -- Different post-processing for different material categories (e.g., UI elements in 3D space that shouldn't bloom).
+- **Outline/silhouette rendering** -- Draw outlines around stencil-marked objects in a post-process pass.
+- **Portal/window effects** -- Different post-processing inside vs outside a stencil-masked region.
+
+All of these can be achieved TODAY using the save/restore pattern: save protected pixels before the effect, let the effect run on everything, restore protected pixels after. This works for any **binary** exclusion decision (apply the effect or don't).
+
+Two cross-platform approaches exist for the save/restore pattern:
+- **Pre-MSAA hardware stencil** (Approach 3 above): Move the save pass to before the MSAA resolve where hardware stencil testing works on both DX12 and Vulkan. Requires an extra resolve pass for the temp buffer. This is the same pattern the engine's own stencil-using passes follow.
+- **Post-MSAA stencil-as-texture** (Approach 2 above, current implementation): Reads stencil as a shader texture after MSAA resolve. Simpler (2 passes instead of 3, smaller temp buffer), but only works on Vulkan due to O3DE's DX12 stencil SRV bug.
+
+Fixing the engine's DX12 stencil SRV creation (Problem 2 above) would make the post-MSAA approach work on both backends, making it the preferred solution.
+
+Beyond save/restore, a resolved non-MSAA stencil buffer (Problem 1) would enable further improvements:
+- Hardware stencil testing directly in post-processing passes (faster than shader-based discard)
+- **Non-binary** stencil use (e.g., "apply 50% bloom to material A, 100% to material B" by reading the stencil value as a parameter inside the effect shader, not just as a save/restore gate)
+- Eliminating the save/restore overhead entirely (two extra passes per excluded effect)
 
 ## Emissive Surfaces and Global Illumination
 
