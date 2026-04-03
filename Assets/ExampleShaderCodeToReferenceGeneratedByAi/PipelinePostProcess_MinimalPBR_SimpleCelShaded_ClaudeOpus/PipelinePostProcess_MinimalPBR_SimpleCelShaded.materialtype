@@ -1,5 +1,5 @@
 {
-    "description": "LightUtil Override: Simple diffuse using LightUtil overrides. Custom diffuse function applied per-light via the engine's pipeline.",
+    "description": "Pipeline Post-Process: Simple cel-shading by post-processing the engine's full PBR lighting result.",
     "version": 1,
     "propertyLayout": {
         "groups": [
@@ -11,13 +11,23 @@
         "properties": {
             "settings": [
                 {
-                    "id": "baseColor",
-                    "displayName": "Base Color",
+                    "id": "litColor",
+                    "displayName": "Lit Color",
                     "type": "Color",
                     "defaultValue": [1.0, 1.0, 1.0],
                     "connection": {
                         "type": "ShaderInput",
-                        "id": "m_baseColor"
+                        "id": "m_litColor"
+                    }
+                },
+                {
+                    "id": "unlitColor",
+                    "displayName": "Unlit Color",
+                    "type": "Color",
+                    "defaultValue": [0.15, 0.15, 0.15],
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_unlitColor"
                     }
                 }
             ]
@@ -25,7 +35,7 @@
     },
     "shaders": [
         {
-            "file": "./LightUtilOverride_SimpleDiffuse.shader"
+            "file": "./PipelinePostProcess_MinimalPBR_SimpleCelShaded.shader"
         },
         {
             "file": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.shader"

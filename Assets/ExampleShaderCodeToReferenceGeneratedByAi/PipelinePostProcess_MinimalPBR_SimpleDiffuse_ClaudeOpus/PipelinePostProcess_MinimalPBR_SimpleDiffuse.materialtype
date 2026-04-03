@@ -1,5 +1,5 @@
 {
-    "description": "Pipeline Post-Process: Simple cel-shading by post-processing the engine's full PBR lighting result.",
+    "description": "Pipeline Post-Process: Simple diffuse using the engine's full PBR pipeline with post-processed output.",
     "version": 1,
     "propertyLayout": {
         "groups": [
@@ -11,23 +11,13 @@
         "properties": {
             "settings": [
                 {
-                    "id": "litColor",
-                    "displayName": "Lit Color",
+                    "id": "baseColor",
+                    "displayName": "Base Color",
                     "type": "Color",
                     "defaultValue": [1.0, 1.0, 1.0],
                     "connection": {
                         "type": "ShaderInput",
-                        "id": "m_litColor"
-                    }
-                },
-                {
-                    "id": "unlitColor",
-                    "displayName": "Unlit Color",
-                    "type": "Color",
-                    "defaultValue": [0.15, 0.15, 0.15],
-                    "connection": {
-                        "type": "ShaderInput",
-                        "id": "m_unlitColor"
+                        "id": "m_baseColor"
                     }
                 }
             ]
@@ -35,7 +25,7 @@
     },
     "shaders": [
         {
-            "file": "./PipelinePostProcess_SimpleCelShaded.shader"
+            "file": "./PipelinePostProcess_MinimalPBR_SimpleDiffuse.shader"
         },
         {
             "file": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.shader"

@@ -1,5 +1,5 @@
 {
-    "Source": "PipelinePostProcess_SimpleDiffuse.azsl",
+    "Source": "LightUtilOverride_MinimalPBR_SimpleDiffuse.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,

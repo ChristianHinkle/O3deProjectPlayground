@@ -1,5 +1,5 @@
 {
-    "materialType": "PipelinePostProcess_SimpleDiffuse.materialtype",
+    "materialType": "PipelinePostProcess_MinimalPBR_SimpleDiffuse.materialtype",
     "materialTypeVersion": 1,
     "propertyValues": {
         "settings.baseColor": [1.0, 1.0, 1.0]

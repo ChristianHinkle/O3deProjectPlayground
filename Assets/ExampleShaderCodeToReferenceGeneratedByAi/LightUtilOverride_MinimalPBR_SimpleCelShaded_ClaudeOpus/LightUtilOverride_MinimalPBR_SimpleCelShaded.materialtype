@@ -40,7 +40,7 @@
     },
     "shaders": [
         {
-            "file": "./LightUtilOverride_SimpleCelShaded.shader"
+            "file": "./LightUtilOverride_MinimalPBR_SimpleCelShaded.shader"
         },
         {
             "file": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.shader"
