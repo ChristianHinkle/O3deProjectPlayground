@@ -85,13 +85,22 @@ ForwardPassOutput MainPS(VSOutput IN)
 
     LightingData lightingData;
     lightingData.Init(surface.position, surface.normal, surface.roughnessLinear, views);
-    lightingData.specularResponse = FresnelSchlickWithRoughness(lightingData.GetSpecularNdotV(), surface.specularF0, surface.roughnessLinear);
-    lightingData.diffuseResponse = 1.0f - lightingData.specularResponse;
+    // All light energy goes to diffuse, none to specular. This prevents the PBR Fresnel
+    // energy split from creating smooth gradients at grazing angles (which would break the
+    // flat cel-shading look). Specular highlights can be added separately via quantization.
+    lightingData.diffuseResponse = 1.0f;
+    lightingData.specularResponse = real3(0.0f, 0.0f, 0.0f);
 
     // --- Let the engine compute lighting for ALL light types ---
     ApplyDecals(tileIterator, surface);
     ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
     ApplyIblForward(surface, lightingData);
+
+    // ApplyIblForward computes both diffuse and specular IBL. The diffuse IBL is what we want
+    // (ambient light from the environment, including reflection probe blending). The specular
+    // IBL creates unwanted smooth Fresnel glow on cel-shaded surfaces. Zero it out.
+    lightingData.specularLighting[0] = real3(0.0, 0.0, 0.0);
+
     lightingData.FinalizeLighting();
 
     // --- Post-process: stylize the aggregate diffuse result ---
@@ -108,8 +117,13 @@ ForwardPassOutput MainPS(VSOutput IN)
     ForwardPassOutput OUT;
     OUT.m_diffuseColor = float4(celColor, -1);  // Override diffuse with our cel-shaded color
     OUT.m_specularColor = float4(0.0, 0.0, 0.0, 1.0);
-    OUT.m_specularF0 = lightingOutput.m_specularF0;
+    // Zero specularF0 so the reflection pipeline (ReflectionGlobalFullscreen, ReflectionComposite)
+    // produces no reflections for our pixels. Roughness = 1.0 in alpha.
+    OUT.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);
     OUT.m_albedo = lightingOutput.m_albedo;
-    OUT.m_normal = lightingOutput.m_normal;
+    // Zero normal signals "no IBL, no reflections" to the reflection pipeline.
+    // Using lightingOutput.m_normal would encode o_enableIBL=true in the alpha,
+    // causing the reflection passes to add unwanted specular IBL on top of our cel result.
+    OUT.m_normal = float4(0.0, 0.0, 0.0, 0.0);
     return OUT;
 }

@@ -256,6 +256,81 @@ This applies regardless of stencil-based SSAO exclusion. Even without any SSAO w
 
 The Manual Light Loop approach doesn't need this because it samples the IBL cubemap directly in its own shader code.
 
+### Controlling Specular IBL in Custom Shaders
+
+`ApplyIblForward()` computes both **diffuse IBL** (ambient light from the environment cubemap) and **specular IBL** (reflections based on Fresnel, roughness, and specularF0). For cel-shaded materials, the specular IBL produces smooth view-dependent gradients (brighter at grazing angles) that break the flat-band look.
+
+Three layers contribute specular IBL. All three must be addressed to fully eliminate unwanted smooth reflections:
+
+**1. Forward pass specular via `ApplyIblForward`:** With `FORCE_IBL_IN_FORWARD_PASS`, the function computes specular IBL and adds it to `lightingData.specularLighting[0]`. Zero it after the call:
+
+```hlsl
+ApplyIblForward(surface, lightingData);
+lightingData.specularLighting[0] = real3(0.0, 0.0, 0.0);  // Remove specular IBL
+```
+
+This preserves the diffuse IBL (ambient light, reflection probe blending) while removing the specular. Alternatively, the specular can be quantized into bands instead of zeroed (see below).
+
+**2. Reflection pipeline via `m_specularF0` output:** After the forward pass, the reflection pipeline (`ReflectionGlobalFullscreen` → `ReflectionComposite`) reads the `m_specularF0` render target to compute reflections. Write zero specularF0 to prevent this:
+
+```hlsl
+OUT.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);  // No reflections from pipeline
+```
+
+**3. IBL enabled flag via `m_normal.a`:** The `GetPbrLightingOutput` function encodes `o_enableIBL` into the normal's alpha channel. The reflection pipeline reads this flag to decide which pixels receive IBL specular. Write zero normal to signal "no IBL":
+
+```hlsl
+OUT.m_normal = float4(0.0, 0.0, 0.0, 0.0);  // No IBL flag = reflection pipeline skips this pixel
+```
+
+Note: zeroing the normal also means screen-space effects that read the normal buffer (SSAO edge detection, SSR) won't work for these pixels.
+
+**Why not also zero `diffuseResponse`/`specularResponse`?** Setting `specularResponse = 0` prevents per-light specular from being computed by `GetSpecularLighting()` inside `ApplyDirectLighting`, but the IBL specular in `ApplyIblForward` uses `specularF0` and BRDF lookup values directly, not `specularResponse`. Both the response AND the post-IBL zeroing are needed for a fully clean result.
+
+### Quantizing Specular Instead of Zeroing
+
+Rather than eliminating specular, you can keep it and step it into bands. `lightingData.specularLighting[0]` is a single accumulator that ALL specular sources add to:
+
+- Per-light specular highlights (from `ApplyDirectLighting` → `GetSpecularLighting` per light)
+- IBL specular reflections (from `ApplyIblForward`)
+
+By the time you read it, it's already the combined result. Stepping it once quantizes all specular sources together -- no separate handling per source needed:
+
+```hlsl
+ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
+ApplyIblForward(surface, lightingData);
+// specularLighting[0] now contains: all per-light highlights + IBL reflections
+
+float specLuminance = dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722));
+float specBand = step(0.3, specLuminance);
+float3 celSpecular = specBand * litColor;
+
+OUT.m_specularColor = float4(celSpecular, 1.0);
+```
+
+**Energy conservation with cel-shading:** PBR energy conservation (`diffuseResponse = 1 - specularResponse`) is still important for cel-shading -- without it, surfaces can appear unnaturally bright at grazing angles where both diffuse and specular contribute full energy. Well-regarded cel-shaded games (Guilty Gear Xrd, etc.) preserve energy conservation.
+
+The issue with keeping the Fresnel response isn't energy conservation itself -- it's that Fresnel creates **smooth gradients** across the surface. The solution: keep the PBR energy split, then quantize BOTH diffuse and specular into bands. The Fresnel transition becomes a hard edge instead of a smooth gradient:
+
+```hlsl
+// Keep PBR energy conservation
+lightingData.specularResponse = FresnelSchlickWithRoughness(
+    lightingData.GetSpecularNdotV(), surface.specularF0, surface.roughnessLinear);
+lightingData.diffuseResponse = 1.0f - lightingData.specularResponse;
+
+// Engine computes lighting with proper energy split
+ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
+ApplyIblForward(surface, lightingData);
+
+// Quantize BOTH into bands -- energy-conserved cel-shading
+float diffuseBand = step(0.5, dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722)));
+float specBand = step(0.3, dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722)));
+```
+
+At grazing angles, Fresnel shifts energy from diffuse to specular. The diffuse band might flip from lit to unlit. The specular band might flip from off to on. Both transitions are hard-edged. The total energy never exceeds what came in -- the quantization makes the energy-conserved transition crisp rather than smooth.
+
+If specular is not desired at all (pure flat cel-shading), setting `diffuseResponse = 1.0` and `specularResponse = 0` is acceptable -- it trades energy conservation for guaranteed flat diffuse with no view-dependent variation. Zero `specularLighting[0]` after `ApplyIblForward` as shown in the zeroing section above. The `m_specularF0` and `m_normal` output zeroing (layers 2 and 3) are still needed either way to prevent the post-forward-pass reflection pipeline from adding its own specular on top.
+
 ## Per-Material SSAO Exclusion
 
 ### The Problem
