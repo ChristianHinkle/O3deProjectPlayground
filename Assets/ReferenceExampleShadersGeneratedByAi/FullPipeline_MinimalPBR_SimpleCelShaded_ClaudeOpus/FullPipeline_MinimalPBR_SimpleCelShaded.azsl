@@ -24,6 +24,11 @@ ShaderResourceGroup MaterialSrg : SRG_PerMaterial
 {
     float3 m_litColor;
     float3 m_unlitColor;
+    float3 m_baseColor;
+    float m_roughness;
+    float m_metallic;
+    float m_diffuseThreshold;
+    float m_specularThreshold;
 }
 
 struct VSInput
@@ -69,9 +74,9 @@ ForwardPassOutput MainPS(VSOutput IN)
     surface.position = IN.m_worldPosition.xyz;
     surface.normal = normalWS;
     surface.vertexNormal = normalWS;
-    surface.roughnessLinear = 1.0;
+    surface.roughnessLinear = MaterialSrg::m_roughness;
     surface.CalculateRoughnessA();
-    surface.SetAlbedoAndSpecularF0(float3(1.0, 1.0, 1.0), 0.5, 0.0);  // White albedo, specularF0Factor=0.5 (standard dielectric), metallic=0
+    surface.SetAlbedoAndSpecularF0(MaterialSrg::m_baseColor, 0.5, MaterialSrg::m_metallic);  // specularF0Factor=0.5 (standard dielectric reflectance)
     surface.clearCoat.InitializeToZero();
     surface.lightingChannels = 0xFFFFFFFF; // Receive light from all channels
 
@@ -104,14 +109,14 @@ ForwardPassOutput MainPS(VSOutput IN)
     // Quantize diffuse into cel-shading bands.
     // Since we used white albedo, diffuseLighting IS the total light intensity.
     float diffuseLuminance = dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722));
-    float diffuseBand = step(0.5, diffuseLuminance);
+    float diffuseBand = step(MaterialSrg::m_diffuseThreshold, diffuseLuminance);
     float3 celDiffuse = lerp(MaterialSrg::m_unlitColor, MaterialSrg::m_litColor, diffuseBand);
 
     // Quantize specular into cel-shading bands.
     // specularLighting[0] is the combined result of per-light highlights + IBL reflections.
     // Stepping it quantizes all specular sources together.
     float specLuminance = dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722));
-    float specBand = step(0.3, specLuminance);
+    float specBand = step(MaterialSrg::m_specularThreshold, specLuminance);
     float3 celSpecular = specBand * MaterialSrg::m_litColor;
 
     // --- Output ---

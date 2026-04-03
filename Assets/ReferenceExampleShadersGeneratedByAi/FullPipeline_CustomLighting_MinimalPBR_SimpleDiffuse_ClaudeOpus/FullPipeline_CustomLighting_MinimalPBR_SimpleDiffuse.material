@@ -1,7 +1,9 @@
 {
     "materialType": "FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse.materialtype",
-    "materialTypeVersion": 1,
+    "materialTypeVersion": 2,
     "propertyValues": {
-        "settings.baseColor": [1.0, 1.0, 1.0]
+        "settings.baseColor": [1.0, 1.0, 1.0],
+        "settings.roughness": 1.0,
+        "settings.metallic": 0.0
     }
 }

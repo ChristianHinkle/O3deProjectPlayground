@@ -22,6 +22,8 @@
 ShaderResourceGroup MaterialSrg : SRG_PerMaterial
 {
     float3 m_baseColor;
+    float m_roughness;
+    float m_metallic;
 }
 
 struct VSInput
@@ -67,9 +69,9 @@ ForwardPassOutput MainPS(VSOutput IN)
     surface.position = IN.m_worldPosition.xyz;
     surface.normal = normalWS;
     surface.vertexNormal = normalWS;
-    surface.roughnessLinear = 1.0;  // Maximum roughness = pure diffuse, no specular highlight
+    surface.roughnessLinear = MaterialSrg::m_roughness;
     surface.CalculateRoughnessA();
-    surface.SetAlbedoAndSpecularF0(MaterialSrg::m_baseColor, 0.0, 0.0);  // No specular, no metallic
+    surface.SetAlbedoAndSpecularF0(MaterialSrg::m_baseColor, 0.5, MaterialSrg::m_metallic);  // specularF0Factor=0.5 (standard dielectric reflectance)
     surface.clearCoat.InitializeToZero();
     surface.lightingChannels = 0xFFFFFFFF; // Receive light from all channels
 

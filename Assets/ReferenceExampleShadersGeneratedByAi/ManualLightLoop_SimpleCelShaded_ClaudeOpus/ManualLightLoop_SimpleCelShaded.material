@@ -1,8 +1,11 @@
 {
     "materialType": "ManualLightLoop_SimpleCelShaded.materialtype",
-    "materialTypeVersion": 1,
+    "materialTypeVersion": 2,
     "propertyValues": {
         "settings.litColor": [1.0, 1.0, 1.0],
-        "settings.unlitColor": [0.15, 0.15, 0.15]
+        "settings.unlitColor": [0.15, 0.15, 0.15],
+        "settings.roughness": 1.0,
+        "settings.diffuseThreshold": 0.5,
+        "settings.specularThreshold": 0.3
     }
 }

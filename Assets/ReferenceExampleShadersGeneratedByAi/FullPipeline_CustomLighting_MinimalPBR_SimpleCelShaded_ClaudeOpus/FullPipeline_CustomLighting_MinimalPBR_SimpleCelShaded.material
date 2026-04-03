@@ -2,9 +2,14 @@
     // Material instance with default lit (white) and unlit (dark gray) colors.
 
     "materialType": "FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded.materialtype",
-    "materialTypeVersion": 1,
+    "materialTypeVersion": 2,
     "propertyValues": {
         "settings.litColor": [1.0, 1.0, 1.0],
-        "settings.unlitColor": [0.15, 0.15, 0.15]
+        "settings.unlitColor": [0.15, 0.15, 0.15],
+        "settings.baseColor": [1.0, 1.0, 1.0],
+        "settings.roughness": 1.0,
+        "settings.metallic": 0.0,
+        "settings.diffuseThreshold": 0.5,
+        "settings.specularThreshold": 0.3
     }
 }

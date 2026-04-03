@@ -11,6 +11,9 @@ ShaderResourceGroup ManualLightLoop_SimpleCelShadedSrg : SRG_PerMaterial
 {
     float3 m_litColor;
     float3 m_unlitColor;
+    float m_roughness;
+    float m_diffuseThreshold;
+    float m_specularThreshold;
 }
 
 struct VSInput
@@ -88,7 +91,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
     // Blinn-Phong shininess (exponent). Higher = tighter specular highlight.
     // Rough mapping from PBR roughness: shininess ≈ 2/(roughness^4) - 2.
     // roughness 1.0 → ~0 (invisible), 0.5 → ~30, 0.2 → ~1248, 0.0 → mirror.
-    float roughness = 1.0;
+    float roughness = ManualLightLoop_SimpleCelShadedSrg::m_roughness;
     float shininess = max(2.0 / max(pow(roughness, 4.0), 0.001) - 2.0, 0.0);
 
     // Accumulate diffuse and specular luminance separately, then step both into bands.
@@ -185,11 +188,11 @@ ForwardPassOutput MainPS(VSOutput psInput)
     }
 
     // --- Cel shading: quantize both diffuse and specular into 2-band steps ---
-    float diffuseBand = step(0.5, diffuseAmount);
+    float diffuseBand = step(ManualLightLoop_SimpleCelShadedSrg::m_diffuseThreshold, diffuseAmount);
     float3 celDiffuse = lerp(unlitColor, litColor, diffuseBand);
 
     // Blinn-Phong specular, stepped into a hard-edged highlight.
-    float specBand = step(0.3, specularAmount);
+    float specBand = step(ManualLightLoop_SimpleCelShadedSrg::m_specularThreshold, specularAmount);
     float3 celSpecular = specBand * litColor;
 
     psOutput.m_diffuseColor = float4(celDiffuse, 1.0);
