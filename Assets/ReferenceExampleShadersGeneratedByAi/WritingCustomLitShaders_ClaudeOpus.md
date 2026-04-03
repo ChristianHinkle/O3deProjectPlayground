@@ -241,7 +241,7 @@ The engine's lighting functions (`GetDiffuseLighting`, `GetSpecularLighting` in 
 
 ### FORCE_IBL_IN_FORWARD_PASS (Recommended for All Custom Shaders)
 
-Shaders that use the engine's lighting pipeline with `FORCE_OPAQUE` (the Pipeline Post-Process and LightUtil Override approaches) should define `FORCE_IBL_IN_FORWARD_PASS 1` before `FORCE_OPAQUE`:
+Shaders that use the engine's lighting pipeline with `FORCE_OPAQUE` (the Full Pipeline and Full Pipeline with Custom Lighting approaches) should define `FORCE_IBL_IN_FORWARD_PASS 1` before `FORCE_OPAQUE`:
 
 ```hlsl
 #define FORCE_IBL_IN_FORWARD_PASS 1
@@ -302,7 +302,7 @@ ApplyIblForward(surface, lightingData);
 // specularLighting[0] now contains: all per-light highlights + IBL reflections
 
 float specLuminance = dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722));
-float specBand = step(0.3, specLuminance);
+float specBand = step(specularThreshold, specLuminance);  // specularThreshold is a material property (default 0.3)
 float3 celSpecular = specBand * litColor;
 
 OUT.m_specularColor = float4(celSpecular, 1.0);
@@ -323,8 +323,8 @@ ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
 ApplyIblForward(surface, lightingData);
 
 // Quantize BOTH into bands -- energy-conserved cel-shading
-float diffuseBand = step(0.5, dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722)));
-float specBand = step(0.3, dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722)));
+float diffuseBand = step(diffuseThreshold, dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722)));
+float specBand = step(specularThreshold, dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722)));
 ```
 
 At grazing angles, Fresnel shifts energy from diffuse to specular. The diffuse band might flip from lit to unlit. The specular band might flip from off to on. Both transitions are hard-edged. The total energy never exceeds what came in -- the quantization makes the energy-conserved transition crisp rather than smooth.
@@ -663,9 +663,9 @@ You read light data directly from the SRGs and write your own shading math per l
 - You're reimplementing attenuation math, cone falloff, etc. that the engine already has. The math is identical -- it's pure code duplication.
 - No shadow support unless you also manually include and call the engine's shadow sampling functions.
 
-**Best for:** Learning how O3DE's lighting data is structured. In practice, LightUtil Override provides the same per-light access inside `Apply()` with far less maintenance (see "Do You Need Manual Light Loops?" below).
+**Best for:** Learning how O3DE's lighting data is structured. In practice, Full Pipeline with Custom Lighting provides the same per-light access inside `Apply()` with far less maintenance (see "Do You Need Manual Light Loops?" below).
 
-### Pipeline Post-Process (directory: `FullPipeline_MinimalPBR_SimpleDiffuse_ClaudeOpus`, `FullPipeline_MinimalPBR_SimpleCelShaded_ClaudeOpus`)
+### Full Pipeline (directory: `FullPipeline_MinimalPBR_SimpleDiffuse_ClaudeOpus`, `FullPipeline_MinimalPBR_SimpleCelShaded_ClaudeOpus`)
 
 You populate the engine's `Surface` struct, call its lighting evaluation, and get back a `LightingData` result with fully computed diffuse/specular. Then you stylize that aggregate result.
 
@@ -701,7 +701,7 @@ The geometry pass outputs surface properties (albedo, normal, roughness, metalli
 
 ### Comparison Table
 
-| | Custom Light Loops | Pipeline Post-Process | LightUtil Override | Deferred (reference) |
+| | Custom Light Loops | Full Pipeline | Full Pipeline + Custom Lighting | Deferred (reference) |
 |---|---|---|---|---|
 | Per-light artistic control | Full | None | Per-overridden type | None |
 | Per-material shading model | Yes | Partial (output only) | Yes | No |
@@ -714,11 +714,11 @@ The geometry pass outputs surface properties (albedo, normal, roughness, metalli
 
 ### Do You Need Manual Light Loops?
 
-Manual light loops (Custom Light Loops) bypass the engine's pipeline entirely -- no shadows, no GPU culling, no future light type support. The question is whether they unlock any visual effect that LightUtil Override can't achieve.
+Manual light loops (Custom Light Loops) bypass the engine's pipeline entirely -- no shadows, no GPU culling, no future light type support. The question is whether they unlock any visual effect that Full Pipeline with Custom Lighting can't achieve.
 
 **They don't.** The LightUtil Override's `Apply()` method receives the same light struct with the same fields (`m_position`, `m_direction`, `m_rgbIntensityCandelas`, etc.). You have full per-light control inside `Apply()`. The only thing manual loops give you beyond that is control over the *iteration itself* (e.g., skip lights, reorder them), which isn't needed for any common NPR effect.
 
-Manual light loops are valuable as a learning tool -- they show exactly where light data lives and how attenuation works. But for production NPR shaders, LightUtil Override + post-process catch-all is strictly better: same artistic control, plus shadows, culling, and forward compatibility.
+Manual light loops are valuable as a learning tool -- they show exactly where light data lives and how attenuation works. But for production NPR shaders, Full Pipeline with Custom Lighting + post-process catch-all is strictly better: same artistic control, plus shadows, culling, and forward compatibility.
 
 ### Do You Need Per-Light Overrides, or Is Post-Process Enough?
 
@@ -751,21 +751,21 @@ Effects where this per-light decision genuinely changes the visual result:
 
 These are real differences, but they're subtle and increasingly niche. In typical scenes with one dominant directional light plus ambient, post-process and per-light override produce nearly identical results.
 
-**Practical recommendation:** Start with Pipeline Post-Process alone. It covers the vast majority of NPR effects with minimal code and full engine support (shadows, all light types, future-proof). If you later notice specific multi-light situations where shadow boundaries look wrong or lights are filling in shadows you want to keep, add LightUtil overrides for the offending light types. The combined approach (`FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`) already has this structure -- per-light overrides for common types, post-process catch-all for everything.
+**Practical recommendation:** Start with Full Pipeline alone. It covers the vast majority of NPR effects with minimal code and full engine support (shadows, all light types, future-proof). If you later notice specific multi-light situations where shadow boundaries look wrong or lights are filling in shadows you want to keep, add Custom Lighting overrides for the offending light types. The combined approach (`FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`) already has this structure -- per-light overrides for common types, post-process catch-all for everything.
 
 ### Why This Matters for O3DE Specifically
 
-O3DE uses forward+ rendering by default. This is the pipeline where each material's pixel shader runs with access to all light data. This is precisely what makes Custom Light Loops and LightUtil Override possible -- your pixel shader gets to decide how every light affects every pixel. A deferred renderer like Unreal's cannot offer this because lighting happens in a separate pass with no knowledge of the original material.
+O3DE uses forward+ rendering by default. This is the pipeline where each material's pixel shader runs with access to all light data. This is precisely what makes Custom Light Loops and Full Pipeline with Custom Lighting possible -- your pixel shader gets to decide how every light affects every pixel. A deferred renderer like Unreal's cannot offer this because lighting happens in a separate pass with no knowledge of the original material.
 
-Pipeline Post-Process is a valid middle ground, but it does reduce the forward+ advantage. If all you're doing is computing standard PBR and then quantizing the result, you could achieve nearly the same thing in a deferred engine by post-processing the lighting buffer. You're not fully leveraging the per-material-per-light access that forward+ provides.
+Full Pipeline is a valid middle ground, but it does reduce the forward+ advantage. If all you're doing is computing standard PBR and then quantizing the result, you could achieve nearly the same thing in a deferred engine by post-processing the lighting buffer. You're not fully leveraging the per-material-per-light access that forward+ provides.
 
-LightUtil Override is the strongest middle ground: you get per-light artistic control for the types you override, automatic PBR fallback for types you don't, and you stay within the engine's pipeline for shadows, culling, and future features. The tradeoff is implementation complexity (include-order dependencies, interface contracts).
+Full Pipeline with Custom Lighting is the strongest middle ground: you get per-light artistic control for the types you override, automatic PBR fallback for types you don't, and you stay within the engine's pipeline for shadows, culling, and future features. The tradeoff is implementation complexity (include-order dependencies, interface contracts).
 
-The sweet spot depends on how much per-light control your art direction actually needs. For most NPR work, start with **Pipeline Post-Process** -- it's the simplest, most future-proof, and covers the vast majority of effects. Add **LightUtil Overrides** for specific light types only if you see multi-light shadow boundary issues. **Custom Light Loops** are useful for learning but offer no artistic capability that LightUtil Override doesn't also provide, while missing shadows and future compatibility.
+The sweet spot depends on how much per-light control your art direction actually needs. For most NPR work, start with **Full Pipeline** -- it's the simplest, most future-proof, and covers the vast majority of effects. Add **Custom Lighting** overrides for specific light types only if you see multi-light shadow boundary issues. **Custom Light Loops** are useful for learning but offer no artistic capability that Custom Lighting doesn't also provide, while missing shadows and future compatibility.
 
-### LightUtil Override (directory: `FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`)
+### Full Pipeline with Custom Lighting (directory: `FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`)
 
-The engine provides a designed customization point that sits between Custom Light Loops and Pipeline Post-Process. Every light type's utility class is wrapped in a `#ifndef` guard:
+The engine provides a designed customization point that sits between Custom Light Loops and Full Pipeline. Every light type's utility class is wrapped in a `#ifndef` guard:
 
 ```hlsl
 // In SimplePointLight.azsli:
@@ -813,7 +813,7 @@ Cast shadows and cel-shading compose naturally because they're both just multipl
 
 #### Combining LightUtil Override with Post-Process (Recommended for NPR)
 
-For NPR styles like cel-shading, a pure LightUtil Override has a problem: any light type you *didn't* override (capsule, quad, polygon, or future types) contributes smooth PBR diffuse, which looks visually inconsistent next to your cel-shaded lights.
+For NPR styles like cel-shading, a pure Custom Lighting approach has a problem: any light type you *didn't* override (capsule, quad, polygon, or future types) contributes smooth PBR diffuse, which looks visually inconsistent next to your cel-shaded lights.
 
 The solution is to **combine LightUtil overrides with a post-process quantization step.** This is what `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus` does:
 
