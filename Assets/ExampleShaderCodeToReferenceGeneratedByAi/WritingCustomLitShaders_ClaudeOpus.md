@@ -866,6 +866,49 @@ You might expect to wrap the base `_PBR` class via composition (as the `LightUti
 
 The working approach is to make your custom classes self-contained: include only `LightStructures.azsli` for the struct definitions, and implement your own `Init()` and `Apply()` with the same attenuation math. This duplicates some code from the base `_PBR` classes, but avoids the dependency cycle.
 
+#### Adding Specular to Custom LightUtil Classes
+
+Custom LightUtil `Apply()` methods only compute what you put in them. If you only call your custom diffuse function (e.g., `CelShadeDiffuse`), per-light specular is zero. The base PBR `Apply()` calls both `GetDiffuseLighting` and `GetSpecularLighting`, but your override replaces the entire method.
+
+To add specular, call `SpecularGGX` from `Brdf.azsli` directly in your `Apply()`:
+
+```hlsl
+void AddSpecularLighting(Surface surface, inout LightingData lightingData, real3 lightIntensity, real3 dirToLight)
+{
+    [unroll]
+    for (uint viewIndex = 0; viewIndex < GET_SHADING_VIEW_COUNT; ++viewIndex)
+    {
+        real3 specular = SpecularGGX(
+            lightingData.dirToCamera[viewIndex], dirToLight,
+            surface.GetSpecularNormal(), surface.GetSpecularF0(),
+            lightingData.GetSpecularNdotV(viewIndex),
+            surface.roughnessA2, lightingData.multiScatterCompensation);
+        specular *= lightIntensity;
+        lightingData.specularLighting[viewIndex] += specular;
+    }
+}
+```
+
+You cannot call `GetSpecularLighting()` from `StandardLighting.azsli` because your custom utils are included BEFORE `StandardLighting.azsli` (they must be, for the `#define` macros to take effect). `SpecularGGX` from `Brdf.azsli` is available because it's in the prerequisites included before your utils.
+
+**AZSL `inout` requirement:** `LightingData` must be passed as `inout` in helper functions. Without `inout`, AZSL passes structs by value and changes are silently discarded. This applies to any helper function that modifies `lightingData.specularLighting`, `lightingData.diffuseLighting`, or any other accumulator.
+
+**`specularF0Factor` must be non-zero:** The `Surface::SetAlbedoAndSpecularF0(albedo, specularF0Factor, metallic)` function computes `specularF0` from the factor. With `specularF0Factor = 0`, the Fresnel response is zero at all angles and no specular is produced by any light source (direct or IBL). Use `specularF0Factor = 0.5` for standard dielectric reflectance (~4% at normal incidence). This is the same value PBR materials use.
+
+The per-light specular accumulates in `lightingData.specularLighting[0]` alongside IBL specular from `ApplyIblForward`. Quantizing it once in the pixel shader output steps all specular sources together.
+
+#### Specular in Manual Light Loop Shaders
+
+The Manual Light Loop approach doesn't have access to the engine's `SpecularGGX` or `GetSpecularLighting`. Use Blinn-Phong instead -- it's self-contained and produces similar hard-edged highlights when stepped:
+
+```hlsl
+float3 halfVec = normalize(dirToLight + dirToCamera);
+float NdotH = saturate(dot(normal, halfVec));
+specularAmount += pow(NdotH, shininess) * intensity;
+```
+
+Map PBR roughness to Blinn-Phong shininess: `shininess ≈ 2 / (roughness^4) - 2`. At roughness 1.0, shininess ≈ 0 (no visible highlight). At roughness 0.2, shininess ≈ 1248 (tight highlight). Accumulate `specularAmount` per light, then step it alongside diffuse.
+
 #### Required Interface Methods
 
 The engine's forward pass code calls methods on your util classes beyond just `Init()` and `Apply()`. If you miss any, the shader compiler will fail. The required interface per light type:

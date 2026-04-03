@@ -83,17 +83,30 @@ ForwardPassOutput MainPS(VSOutput psInput)
     float3 litColor = ManualLightLoop_SimpleCelShadedSrg::m_litColor;
     float3 unlitColor = ManualLightLoop_SimpleCelShadedSrg::m_unlitColor;
 
-    // Accumulate a scalar light intensity from all sources, then step it into 2 bands.
-    float lightAmount = 0.0;
+    float3 dirToCamera = normalize(ViewSrg::m_worldPosition.xyz - psInput.m_worldPosition);
+
+    // Blinn-Phong shininess (exponent). Higher = tighter specular highlight.
+    // Rough mapping from PBR roughness: shininess ≈ 2/(roughness^4) - 2.
+    // roughness 1.0 → ~0 (invisible), 0.5 → ~30, 0.2 → ~1248, 0.0 → mirror.
+    float roughness = 1.0;
+    float shininess = max(2.0 / max(pow(roughness, 4.0), 0.001) - 2.0, 0.0);
+
+    // Accumulate diffuse and specular luminance separately, then step both into bands.
+    float diffuseAmount = 0.0;
+    float specularAmount = 0.0;
 
     // --- Directional lights ---
     for (int dirIdx = 0; dirIdx < SceneSrg::m_directionalLightCount; dirIdx++)
     {
         float3 dirToLight = normalize(-SceneSrg::m_directionalLights[dirIdx].m_direction);
-        float NdotL = saturate(dot(normal, dirToLight));
-        // Weight by perceived brightness of the light color
         float intensity = dot(SceneSrg::m_directionalLights[dirIdx].m_rgbIntensityLux, float3(0.2126, 0.7152, 0.0722));
-        lightAmount += NdotL * intensity;
+
+        float NdotL = saturate(dot(normal, dirToLight));
+        diffuseAmount += NdotL * intensity;
+
+        float3 halfVec = normalize(dirToLight + dirToCamera);
+        float NdotH = saturate(dot(normal, halfVec));
+        specularAmount += pow(NdotH, shininess) * intensity;
     }
 
     // --- Point lights: area (Sphere) and simple punctual variants ---
@@ -104,8 +117,12 @@ ForwardPassOutput MainPS(VSOutput psInput)
             ViewSrg::m_pointLights[ptIdx].m_position,
             ViewSrg::m_pointLights[ptIdx].m_invAttenuationRadiusSquared,
             ViewSrg::m_pointLights[ptIdx].m_rgbIntensityCandelas, ptDirToLight);
+        float intensity = dot(rgb, float3(0.2126, 0.7152, 0.0722));
         float NdotL = saturate(dot(normal, ptDirToLight));
-        lightAmount += NdotL * dot(rgb, float3(0.2126, 0.7152, 0.0722));
+        diffuseAmount += NdotL * intensity;
+        float3 halfVec = normalize(ptDirToLight + dirToCamera);
+        float NdotH = saturate(dot(normal, halfVec));
+        specularAmount += pow(NdotH, shininess) * intensity;
     }
     for (uint sptIdx = 0; sptIdx < ViewSrg::m_simplePointLightCount; sptIdx++)
     {
@@ -113,8 +130,12 @@ ForwardPassOutput MainPS(VSOutput psInput)
             ViewSrg::m_simplePointLights[sptIdx].m_position,
             ViewSrg::m_simplePointLights[sptIdx].m_invAttenuationRadiusSquared,
             ViewSrg::m_simplePointLights[sptIdx].m_rgbIntensityCandelas, ptDirToLight);
+        float intensity = dot(rgb, float3(0.2126, 0.7152, 0.0722));
         float NdotL = saturate(dot(normal, ptDirToLight));
-        lightAmount += NdotL * dot(rgb, float3(0.2126, 0.7152, 0.0722));
+        diffuseAmount += NdotL * intensity;
+        float3 halfVec = normalize(ptDirToLight + dirToCamera);
+        float NdotH = saturate(dot(normal, halfVec));
+        specularAmount += pow(NdotH, shininess) * intensity;
     }
 
     // --- Spot lights: area (Disk) and simple punctual variants ---
@@ -129,8 +150,12 @@ ForwardPassOutput MainPS(VSOutput psInput)
             ViewSrg::m_diskLights[spIdx].m_direction,
             ViewSrg::m_diskLights[spIdx].m_cosInnerConeAngle,
             ViewSrg::m_diskLights[spIdx].m_cosOuterConeAngle);
+        float intensity = dot(rgb, float3(0.2126, 0.7152, 0.0722)) * cone;
         float NdotL = saturate(dot(normal, spDirToLight));
-        lightAmount += NdotL * dot(rgb, float3(0.2126, 0.7152, 0.0722)) * cone;
+        diffuseAmount += NdotL * intensity;
+        float3 halfVec = normalize(spDirToLight + dirToCamera);
+        float NdotH = saturate(dot(normal, halfVec));
+        specularAmount += pow(NdotH, shininess) * intensity;
     }
     for (uint sspIdx = 0; sspIdx < ViewSrg::m_simpleSpotLightCount; sspIdx++)
     {
@@ -142,26 +167,33 @@ ForwardPassOutput MainPS(VSOutput psInput)
             ViewSrg::m_simpleSpotLights[sspIdx].m_direction,
             ViewSrg::m_simpleSpotLights[sspIdx].m_cosInnerConeAngle,
             ViewSrg::m_simpleSpotLights[sspIdx].m_cosOuterConeAngle);
+        float intensity = dot(rgb, float3(0.2126, 0.7152, 0.0722)) * cone;
         float NdotL = saturate(dot(normal, spDirToLight));
-        lightAmount += NdotL * dot(rgb, float3(0.2126, 0.7152, 0.0722)) * cone;
+        diffuseAmount += NdotL * intensity;
+        float3 halfVec = normalize(spDirToLight + dirToCamera);
+        float NdotH = saturate(dot(normal, halfVec));
+        specularAmount += pow(NdotH, shininess) * intensity;
     }
 
-    // --- IBL diffuse ---
+    // --- IBL diffuse (no IBL specular in the manual approach) ---
     {
         float3 irradianceDir = RotateByQuaternion(normal, SceneSrg::m_iblOrientation);
         float3 iblSample = SceneSrg::m_diffuseEnvMap.Sample(SceneSrg::m_samplerEnv, WorldToCubemapCoords(irradianceDir)).rgb;
         float iblExposure = pow(2.0, SceneSrg::m_iblExposure);
         float iblLuminance = dot(iblSample, float3(0.2126, 0.7152, 0.0722)) * iblExposure;
-        lightAmount += iblLuminance;
+        diffuseAmount += iblLuminance;
     }
 
-    // --- Cel shading: 2 discrete bands ---
-    // step() gives 0.0 when lightAmount < 0.5, 1.0 when >= 0.5
-    float band = step(0.5, lightAmount);
-    float3 color = lerp(unlitColor, litColor, band);
+    // --- Cel shading: quantize both diffuse and specular into 2-band steps ---
+    float diffuseBand = step(0.5, diffuseAmount);
+    float3 celDiffuse = lerp(unlitColor, litColor, diffuseBand);
 
-    psOutput.m_diffuseColor = float4(color, 1.0);
-    psOutput.m_specularColor = float4(0.0, 0.0, 0.0, 1.0);
+    // Blinn-Phong specular, stepped into a hard-edged highlight.
+    float specBand = step(0.3, specularAmount);
+    float3 celSpecular = specBand * litColor;
+
+    psOutput.m_diffuseColor = float4(celDiffuse, 1.0);
+    psOutput.m_specularColor = float4(celSpecular, 1.0);
     psOutput.m_albedo = float4(litColor, 1.0);
     psOutput.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);
     psOutput.m_normal = float4(0.0, 0.0, 0.0, 0.0);

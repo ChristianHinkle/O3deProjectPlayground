@@ -71,7 +71,7 @@ ForwardPassOutput MainPS(VSOutput IN)
     surface.vertexNormal = normalWS;
     surface.roughnessLinear = 1.0;
     surface.CalculateRoughnessA();
-    surface.SetAlbedoAndSpecularF0(float3(1.0, 1.0, 1.0), 0.0, 0.0);  // White albedo so diffuse = pure light contribution
+    surface.SetAlbedoAndSpecularF0(float3(1.0, 1.0, 1.0), 0.5, 0.0);  // White albedo, specularF0Factor=0.5 (standard dielectric), metallic=0
     surface.clearCoat.InitializeToZero();
     surface.lightingChannels = 0xFFFFFFFF; // Receive light from all channels
 
@@ -85,38 +85,41 @@ ForwardPassOutput MainPS(VSOutput IN)
 
     LightingData lightingData;
     lightingData.Init(surface.position, surface.normal, surface.roughnessLinear, views);
-    // All light energy goes to diffuse, none to specular. This prevents the PBR Fresnel
-    // energy split from creating smooth gradients at grazing angles (which would break the
-    // flat cel-shading look). Specular highlights can be added separately via quantization.
-    lightingData.diffuseResponse = 1.0f;
-    lightingData.specularResponse = real3(0.0f, 0.0f, 0.0f);
+    // Keep PBR energy conservation: Fresnel splits energy between diffuse and specular.
+    // Both sides will be quantized into bands, so the smooth Fresnel gradient becomes a hard edge.
+    lightingData.specularResponse = FresnelSchlickWithRoughness(lightingData.GetSpecularNdotV(), surface.specularF0, surface.roughnessLinear);
+    lightingData.diffuseResponse = 1.0f - lightingData.specularResponse;
 
     // --- Let the engine compute lighting for ALL light types ---
     ApplyDecals(tileIterator, surface);
+    // ApplyDirectLighting handles all light types (directional, point, spot, disk, etc.)
+    // using the engine's standard PBR diffuse and specular calculations.
     ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
+    // ApplyIblForward adds both diffuse IBL (ambient from environment, including reflection
+    // probe blending) and specular IBL (Fresnel-based reflections) to lightingData.
     ApplyIblForward(surface, lightingData);
-
-    // ApplyIblForward computes both diffuse and specular IBL. The diffuse IBL is what we want
-    // (ambient light from the environment, including reflection probe blending). The specular
-    // IBL creates unwanted smooth Fresnel glow on cel-shaded surfaces. Zero it out.
-    lightingData.specularLighting[0] = real3(0.0, 0.0, 0.0);
-
     lightingData.FinalizeLighting();
 
-    // --- Post-process: stylize the aggregate diffuse result ---
+    // --- Post-process: stylize the aggregate lighting results ---
+    // Quantize diffuse into cel-shading bands.
     // Since we used white albedo, diffuseLighting IS the total light intensity.
     float diffuseLuminance = dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722));
-    float band = step(0.5, diffuseLuminance);
-    float3 celColor = lerp(MaterialSrg::m_unlitColor, MaterialSrg::m_litColor, band);
+    float diffuseBand = step(0.5, diffuseLuminance);
+    float3 celDiffuse = lerp(MaterialSrg::m_unlitColor, MaterialSrg::m_litColor, diffuseBand);
+
+    // Quantize specular into cel-shading bands.
+    // specularLighting[0] is the combined result of per-light highlights + IBL reflections.
+    // Stepping it quantizes all specular sources together.
+    float specLuminance = dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722));
+    float specBand = step(0.3, specLuminance);
+    float3 celSpecular = specBand * MaterialSrg::m_litColor;
 
     // --- Output ---
-    // Use GetPbrLightingOutput for properly encoded albedo/normal/specularF0 render targets
-    // (supports SSAO, SSR, diffuse GI, etc.), then override the diffuse color with our cel result.
     PbrLightingOutput lightingOutput = GetPbrLightingOutput(surface, lightingData, 1.0);
 
     ForwardPassOutput OUT;
-    OUT.m_diffuseColor = float4(celColor, -1);  // Override diffuse with our cel-shaded color
-    OUT.m_specularColor = float4(0.0, 0.0, 0.0, 1.0);
+    OUT.m_diffuseColor = float4(celDiffuse, -1);
+    OUT.m_specularColor = float4(celSpecular, 1.0);
     // Zero specularF0 so the reflection pipeline (ReflectionGlobalFullscreen, ReflectionComposite)
     // produces no reflections for our pixels. Roughness = 1.0 in alpha.
     OUT.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);

@@ -21,6 +21,27 @@ real3 CelShadeDiffuse(Surface surface, real3 dirToLight, real3 lightIntensity)
     return surface.albedo * celFactor * lightIntensity;
 }
 
+// Adds per-light specular to lightingData using the engine's standard GGX BRDF.
+// Called from each light util's Apply() alongside CelShadeDiffuse.
+// We use the engine's specular math as-is (not cel-shaded here) because the
+// specular result is quantized into bands later in the pixel shader output.
+// GetSpecularLighting() from StandardLighting.azsli is not available at this
+// include stage, so we call SpecularGGX from Brdf.azsli directly.
+void AddSpecularLighting(Surface surface, inout LightingData lightingData, real3 lightIntensity, real3 dirToLight)
+{
+    [unroll]
+    for (uint viewIndex = 0; viewIndex < GET_SHADING_VIEW_COUNT; ++viewIndex)
+    {
+        real3 specular = SpecularGGX(
+            lightingData.dirToCamera[viewIndex], dirToLight,
+            surface.GetSpecularNormal(), surface.GetSpecularF0(),
+            lightingData.GetSpecularNdotV(viewIndex),
+            surface.roughnessA2, lightingData.multiScatterCompensation);
+        specular *= lightIntensity;
+        lightingData.specularLighting[viewIndex] += specular;
+    }
+}
+
 // --- DirectionalLight ---
 #define DirectionalLightUtil DirectionalLightUtil_CelShade
 class DirectionalLightUtil_CelShade
@@ -35,6 +56,7 @@ class DirectionalLightUtil_CelShade
     {
         real3 dirToLight = normalize(real3(-light.m_direction));
         lightingData.diffuseLighting += CelShadeDiffuse(surface, dirToLight, real3(light.m_rgbIntensityLux)) * litRatio;
+        AddSpecularLighting(surface, lightingData, real3(light.m_rgbIntensityLux), dirToLight);
     }
 };
 
@@ -67,6 +89,7 @@ class SimplePointLightUtil_CelShade
         real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation;
 
         lightingData.diffuseLighting += CelShadeDiffuse(surface, m_surfaceToLightDirection, lightIntensity) * litRatio;
+        AddSpecularLighting(surface, lightingData, lightIntensity, m_surfaceToLightDirection);
     }
 };
 
@@ -104,6 +127,7 @@ class SimpleSpotLightUtil_CelShade
         real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation * m_angleFalloff;
 
         lightingData.diffuseLighting += CelShadeDiffuse(surface, m_surfaceToLightDirection, lightIntensity) * litRatio;
+        AddSpecularLighting(surface, lightingData, lightIntensity, m_surfaceToLightDirection);
     }
 };
 
@@ -136,6 +160,7 @@ class PointLightUtil_CelShade
         real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation;
 
         lightingData.diffuseLighting += CelShadeDiffuse(surface, m_surfaceToLightDirection, lightIntensity) * litRatio;
+        AddSpecularLighting(surface, lightingData, lightIntensity, m_surfaceToLightDirection);
     }
 
     void ApplySampled(PointLight light, Surface surface, inout LightingData lightingData, const uint sampleCount = 512)
@@ -180,6 +205,7 @@ class DiskLightUtil_CelShade
         real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation * max(m_angleFalloff, 0.0);
 
         lightingData.diffuseLighting += CelShadeDiffuse(surface, m_posToLightDir, lightIntensity) * litRatio;
+        AddSpecularLighting(surface, lightingData, lightIntensity, m_posToLightDir);
     }
 
     void ApplySampled(DiskLight light, Surface surface, inout LightingData lightingData, const uint sampleCount = 512)
