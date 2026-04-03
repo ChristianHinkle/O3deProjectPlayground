@@ -1,10 +1,5 @@
 {
-    // LightUtil Override cel-shaded material type.
-    // Defines litColor/unlitColor properties connected to shader SRG members.
-    // Uses custom depth pass (StencilExcludeDepthPass) to avoid writing stencil bit 0x80,
-    // enabling stencil-based exclusion from SSAO and other post-processing effects.
-
-    "description": "LightUtil Override: Cel-shading via LightUtil overrides. Per-light cel-shading with engine pipeline fallback for unoverridden light types.",
+    "description": "Pipeline Post-Process: Simple cel-shading by post-processing the engine's full PBR lighting result.",
     "version": 1,
     "propertyLayout": {
         "groups": [
@@ -40,7 +35,7 @@
     },
     "shaders": [
         {
-            "file": "./LightUtilOverride_MinimalPBR_SimpleCelShaded.shader"
+            "file": "./FullPipeline_MinimalPBR_SimpleCelShaded.shader"
         },
         {
             "file": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.shader"

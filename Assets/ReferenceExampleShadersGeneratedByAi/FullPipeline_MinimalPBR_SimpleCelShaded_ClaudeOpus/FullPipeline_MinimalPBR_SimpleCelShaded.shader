@@ -1,5 +1,5 @@
 {
-    "Source": "LightUtilOverride_MinimalPBR_SimpleDiffuse.azsl",
+    "Source": "FullPipeline_MinimalPBR_SimpleCelShaded.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,

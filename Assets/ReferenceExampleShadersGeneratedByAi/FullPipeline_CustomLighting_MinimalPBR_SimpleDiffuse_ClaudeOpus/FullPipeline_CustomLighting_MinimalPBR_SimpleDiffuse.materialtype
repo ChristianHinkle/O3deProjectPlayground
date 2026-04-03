@@ -25,7 +25,7 @@
     },
     "shaders": [
         {
-            "file": "./LightUtilOverride_MinimalPBR_SimpleDiffuse.shader"
+            "file": "./FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse.shader"
         },
         {
             "file": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.shader"

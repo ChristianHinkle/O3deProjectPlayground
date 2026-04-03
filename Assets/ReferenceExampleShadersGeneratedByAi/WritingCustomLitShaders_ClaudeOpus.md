@@ -665,7 +665,7 @@ You read light data directly from the SRGs and write your own shading math per l
 
 **Best for:** Learning how O3DE's lighting data is structured. In practice, LightUtil Override provides the same per-light access inside `Apply()` with far less maintenance (see "Do You Need Manual Light Loops?" below).
 
-### Pipeline Post-Process (directory: `PipelinePostProcess_MinimalPBR_SimpleDiffuse_ClaudeOpus`, `PipelinePostProcess_MinimalPBR_SimpleCelShaded_ClaudeOpus`)
+### Pipeline Post-Process (directory: `FullPipeline_MinimalPBR_SimpleDiffuse_ClaudeOpus`, `FullPipeline_MinimalPBR_SimpleCelShaded_ClaudeOpus`)
 
 You populate the engine's `Surface` struct, call its lighting evaluation, and get back a `LightingData` result with fully computed diffuse/specular. Then you stylize that aggregate result.
 
@@ -751,7 +751,7 @@ Effects where this per-light decision genuinely changes the visual result:
 
 These are real differences, but they're subtle and increasingly niche. In typical scenes with one dominant directional light plus ambient, post-process and per-light override produce nearly identical results.
 
-**Practical recommendation:** Start with Pipeline Post-Process alone. It covers the vast majority of NPR effects with minimal code and full engine support (shadows, all light types, future-proof). If you later notice specific multi-light situations where shadow boundaries look wrong or lights are filling in shadows you want to keep, add LightUtil overrides for the offending light types. The combined approach (`LightUtilOverride_MinimalPBR_SimpleCelShaded_ClaudeOpus`) already has this structure -- per-light overrides for common types, post-process catch-all for everything.
+**Practical recommendation:** Start with Pipeline Post-Process alone. It covers the vast majority of NPR effects with minimal code and full engine support (shadows, all light types, future-proof). If you later notice specific multi-light situations where shadow boundaries look wrong or lights are filling in shadows you want to keep, add LightUtil overrides for the offending light types. The combined approach (`FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`) already has this structure -- per-light overrides for common types, post-process catch-all for everything.
 
 ### Why This Matters for O3DE Specifically
 
@@ -763,7 +763,7 @@ LightUtil Override is the strongest middle ground: you get per-light artistic co
 
 The sweet spot depends on how much per-light control your art direction actually needs. For most NPR work, start with **Pipeline Post-Process** -- it's the simplest, most future-proof, and covers the vast majority of effects. Add **LightUtil Overrides** for specific light types only if you see multi-light shadow boundary issues. **Custom Light Loops** are useful for learning but offer no artistic capability that LightUtil Override doesn't also provide, while missing shadows and future compatibility.
 
-### LightUtil Override (directory: `LightUtilOverride_MinimalPBR_SimpleDiffuse_ClaudeOpus`, `LightUtilOverride_MinimalPBR_SimpleCelShaded_ClaudeOpus`)
+### LightUtil Override (directory: `FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`)
 
 The engine provides a designed customization point that sits between Custom Light Loops and Pipeline Post-Process. Every light type's utility class is wrapped in a `#ifndef` guard:
 
@@ -815,7 +815,7 @@ Cast shadows and cel-shading compose naturally because they're both just multipl
 
 For NPR styles like cel-shading, a pure LightUtil Override has a problem: any light type you *didn't* override (capsule, quad, polygon, or future types) contributes smooth PBR diffuse, which looks visually inconsistent next to your cel-shaded lights.
 
-The solution is to **combine LightUtil overrides with a post-process quantization step.** This is what `LightUtilOverride_MinimalPBR_SimpleCelShaded_ClaudeOpus` does:
+The solution is to **combine LightUtil overrides with a post-process quantization step.** This is what `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus` does:
 
 1. Override the common light types (directional, point, spot, disk) with per-light cel-shading via custom LightUtil classes
 2. Let unoverridden types (capsule, quad, polygon) fall through to PBR defaults

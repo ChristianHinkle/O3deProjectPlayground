@@ -1,5 +1,5 @@
 {
-    "Source": "PipelinePostProcess_MinimalPBR_SimpleCelShaded.azsl",
+    "Source": "FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,
