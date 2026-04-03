@@ -1,0 +1,46 @@
+{
+    // Pre-MSAA Stencil Restore Pass
+    //
+    // Runs AFTER the SSAO pass. Reads the resolved (non-MSAA) temp buffer written by the
+    // save pass and overwrites SSAO-darkened diffuse values for excluded pixels.
+    //
+    // No stencil testing needed. The temp buffer only contains excluded pixels (included
+    // pixels were rejected by the save pass's hardware stencil test and remain zero from
+    // the buffer clear). The shader discards zero-alpha pixels.
+    //
+    // DiffuseInputOutput uses LoadAction: Load to preserve SSAO-darkened values for
+    // included pixels that the shader discards.
+
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "PassAsset",
+    "ClassData": {
+        "PassTemplate": {
+            "Name": "PreMsaaStencilRestoreTemplate_ClaudeOpus",
+            "PassClass": "FullScreenTriangle",
+            "Slots": [
+                {
+                    // Resolved (non-MSAA) temp buffer from the MSAA resolve
+                    "Name": "SourceInput",
+                    "SlotType": "Input",
+                    "ScopeAttachmentUsage": "Shader"
+                },
+                {
+                    // Post-SSAO non-MSAA diffuse buffer to restore INTO
+                    "Name": "DiffuseInputOutput",
+                    "SlotType": "InputOutput",
+                    "ScopeAttachmentUsage": "RenderTarget",
+                    "LoadStoreAction": {
+                        "LoadAction": "Load"
+                    }
+                }
+            ],
+            "PassData": {
+                "$type": "FullscreenTrianglePassData",
+                "ShaderAsset": {
+                    "FilePath": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/PreMsaaStencilRestore_ClaudeOpus/PreMsaaStencilRestore_ClaudeOpus.shader"
+                }
+            }
+        }
+    }
+}

@@ -5,6 +5,7 @@
 #include "O3DEProjectPlaygroundCHSystemComponent.h"
 #include "YoComponent.h"
 #include "ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionSystemComponent_ClaudeOpus.h"
+#include "ExampleCodeToReferenceGeneratedByAi/PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus.h"
 
 #include <O3DEProjectPlaygroundCH/O3DEProjectPlaygroundCHTypeIds.h>
 
@@ -25,6 +26,7 @@ namespace O3DEProjectPlaygroundCH
                 O3DEProjectPlaygroundCHSystemComponent::CreateDescriptor(),
                 YoComponent::CreateDescriptor(),
                 SsaoStencilExclusionSystemComponent_ClaudeOpus::CreateDescriptor(),
+                PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus::CreateDescriptor(),
             });
         }
 
@@ -36,7 +38,9 @@ namespace O3DEProjectPlaygroundCH
             return AZ::ComponentTypeList{
                 azrtti_typeid<O3DEProjectPlaygroundCHSystemComponent>(),
                 azrtti_typeid<YoComponent>(),
-                azrtti_typeid<SsaoStencilExclusionSystemComponent_ClaudeOpus>(),
+                // Enable ONE of these (they provide the same service and are mutually exclusive):
+                // azrtti_typeid<SsaoStencilExclusionSystemComponent_ClaudeOpus>(),          // Vulkan only (stencil-as-texture)
+                azrtti_typeid<PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus>(),      // Cross-platform (pre-MSAA hardware stencil)
             };
         }
     };

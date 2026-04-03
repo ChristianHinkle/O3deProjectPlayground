@@ -28,6 +28,20 @@
                 // stencil-excluded pixels AFTER SSAO runs. Undoes SSAO for those pixels.
                 "Name": "SsaoStencilRestoreTemplate_ClaudeOpus",
                 "Path": "Assets/Passes/ExampleCodeToReferenceGeneratedByAi/SsaoStencilRestore_ClaudeOpus.pass"
+            },
+
+            // --- Pre-MSAA approach (cross-platform, DX12 + Vulkan) ---
+            {
+                // Pre-MSAA save pass: uses hardware stencil testing (before MSAA resolve,
+                // where MSAA states match). Works on both DX12 and Vulkan.
+                "Name": "PreMsaaStencilSaveTemplate_ClaudeOpus",
+                "Path": "Assets/Passes/ExampleCodeToReferenceGeneratedByAi/PreMsaaStencilSave_ClaudeOpus.pass"
+            },
+            {
+                // Pre-MSAA restore pass: reads resolved temp buffer after SSAO.
+                // No stencil needed -- temp buffer contents serve as the mask.
+                "Name": "PreMsaaStencilRestoreTemplate_ClaudeOpus",
+                "Path": "Assets/Passes/ExampleCodeToReferenceGeneratedByAi/PreMsaaStencilRestore_ClaudeOpus.pass"
             }
         ]
     }

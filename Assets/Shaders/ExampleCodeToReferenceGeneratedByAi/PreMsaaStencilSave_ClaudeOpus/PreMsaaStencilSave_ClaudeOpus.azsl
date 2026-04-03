@@ -1,0 +1,29 @@
+// Pre-MSAA stencil save shader.
+// Copies MSAA diffuse pixels to an MSAA temp buffer for pixels that pass the
+// hardware stencil test. Runs BEFORE the MSAA resolve, where both the diffuse
+// and depth-stencil are MSAA (matching sample counts).
+//
+// The stencil test is configured in the .shader file (NotEqual, ref 0x80, mask 0x80),
+// so only pixels WITHOUT bit 0x80 (excluded materials) are processed.
+// Included pixels (PBR with bit 0x80) are rejected by the fixed-function stencil test
+// before the shader even runs.
+//
+// This is a simple passthrough -- the hardware stencil test does all the filtering.
+
+#include <Atom/Features/SrgSemantics.azsli>
+#include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
+#include <Atom/Features/PostProcessing/FullscreenPixelInfo.azsli>
+
+ShaderResourceGroup PassSrg : SRG_PerPass
+{
+    Texture2DMS<float4> m_source;
+}
+
+PSOutput MainPS(VSOutput IN)
+{
+    uint2 screenCoords = uint2(IN.m_position.xy);
+
+    PSOutput OUT;
+    OUT.m_color = PassSrg::m_source.Load(screenCoords, 0);
+    return OUT;
+}

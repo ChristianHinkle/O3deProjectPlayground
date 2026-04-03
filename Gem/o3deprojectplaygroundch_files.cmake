@@ -10,4 +10,8 @@ set(FILES
     Source/ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionFeatureProcessor_ClaudeOpus.h
     Source/ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionSystemComponent_ClaudeOpus.cpp
     Source/ExampleCodeToReferenceGeneratedByAi/SsaoStencilExclusionSystemComponent_ClaudeOpus.h
+    Source/ExampleCodeToReferenceGeneratedByAi/PreMsaaSsaoStencilExclusionFeatureProcessor_ClaudeOpus.cpp
+    Source/ExampleCodeToReferenceGeneratedByAi/PreMsaaSsaoStencilExclusionFeatureProcessor_ClaudeOpus.h
+    Source/ExampleCodeToReferenceGeneratedByAi/PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus.cpp
+    Source/ExampleCodeToReferenceGeneratedByAi/PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus.h
 )

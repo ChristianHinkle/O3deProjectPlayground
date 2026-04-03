@@ -1,0 +1,36 @@
+// Pre-MSAA stencil restore shader.
+// Copies saved diffuse values back to the post-SSAO diffuse buffer for excluded pixels.
+// Runs AFTER the SSAO pass, where the diffuse is non-MSAA (resolved).
+//
+// No stencil testing is needed here. The temp buffer was written by the save pass
+// which used hardware stencil to only save excluded pixels. Included pixels in the
+// temp buffer are zero (from the clear). We check for non-zero alpha to identify
+// saved pixels and overwrite them in the diffuse.
+
+#include <Atom/Features/SrgSemantics.azsli>
+#include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
+#include <Atom/Features/PostProcessing/FullscreenPixelInfo.azsli>
+
+ShaderResourceGroup PassSrg : SRG_PerPass
+{
+    Texture2D<float4> m_source;
+}
+
+PSOutput MainPS(VSOutput IN)
+{
+    uint2 screenCoords = uint2(IN.m_position.xy);
+
+    float4 saved = PassSrg::m_source.Load(int3(screenCoords, 0));
+
+    // The temp buffer is cleared to (0,0,0,0). Only excluded pixels have data
+    // (written by the save pass's stencil-tested copy). If alpha is 0, this pixel
+    // wasn't saved -- discard to preserve the SSAO-darkened diffuse value.
+    if (saved.a == 0.0)
+    {
+        discard;
+    }
+
+    PSOutput OUT;
+    OUT.m_color = saved;
+    return OUT;
+}

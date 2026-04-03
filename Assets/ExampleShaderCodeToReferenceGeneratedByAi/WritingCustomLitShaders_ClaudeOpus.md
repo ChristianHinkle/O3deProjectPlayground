@@ -305,9 +305,9 @@ This is why the engine's SSAO modulation uses a ComputePass (no render targets, 
 
 The simplest option. Disable SSAO in the level's PostFX settings or via C++ by disabling the `ModulateWithSsao` pass. No stencil work needed. Acceptable if the project is fully stylized with no PBR materials that need AO.
 
-### Approach 2: Stencil Save/Restore via C++ Pipeline Injection (Active Implementation)
+### Approach 2: Post-MSAA Stencil-as-Texture Save/Restore (Vulkan Only)
 
-The active approach in this project. Instead of modifying the SSAO pass itself, we **sandwich** the Ssao parent pass with save/restore passes that preserve excluded pixels:
+An alternative approach that reads the stencil buffer as a shader texture after MSAA resolve. Simpler than Approach 3 (2 passes instead of 3, smaller temp buffer) but only works on Vulkan due to an O3DE DX12 engine bug. Instead of modifying the SSAO pass itself, we **sandwich** the Ssao parent pass with save/restore passes that preserve excluded pixels:
 
 1. **Save pass** (before Ssao): Copies diffuse for excluded pixels to a temp buffer
 2. **Ssao runs normally**: Darkens everything including excluded pixels
@@ -336,25 +336,48 @@ The save/restore passes identify excluded pixels by reading the stencil buffer a
 | `Shaders/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.azsl` | Wrapper that #includes the engine's DepthPass.azsl |
 | `Gem/Source/SsaoStencilExclusionFeatureProcessor_ClaudeOpus.*` | C++ FeatureProcessor that injects save/restore passes |
 
-### Approach 3: Pre-MSAA-Resolve Hardware Stencil Save/Restore (Cross-Platform, Not Yet Implemented)
+### Approach 3: Pre-MSAA-Resolve Hardware Stencil Save/Restore (Cross-Platform, Active Implementation)
 
-The approach the engine itself uses for stencil-dependent passes. Move the save pass to BEFORE the MSAA resolve, where both the diffuse buffer and depth-stencil are MSAA. Hardware stencil testing works because the sample counts match. This is how `DiffuseGlobalFullscreen` and `ReflectionComposite` use stencil -- proven on both DX12 and Vulkan, no engine bugs to work around.
+The active cross-platform approach. Uses the same stencil pattern as the engine's own passes (`DiffuseGlobalFullscreen`, `ReflectionComposite`). The save pass runs BEFORE the MSAA resolve, where both the diffuse buffer and depth-stencil are MSAA. Hardware stencil testing works because the sample counts match. Proven on both DX12 and Vulkan, no engine bugs to work around.
 
-**How it would work:**
+**How it works:**
 
-1. **Save pass** (before MSAA resolve, near DiffuseGlobalFullscreen): A FullscreenTriangle pass with hardware stencil testing against the MSAA depth-stencil. Reads the MSAA diffuse buffer and writes excluded pixels to an MSAA temp buffer. Stencil test (`NotEqual` with ref 0x80) ensures only excluded pixels are processed. Both render target and depth-stencil are MSAA -- no mismatch.
-2. **Temp resolve pass** (alongside MSAAResolveDiffusePass): Resolves the MSAA temp buffer to a non-MSAA texture, same operation the engine performs on diffuse and specular.
-3. **Restore pass** (after Ssao): Reads the resolved non-MSAA temp and overwrites the SSAO-darkened diffuse for excluded pixels. No stencil needed here -- the temp buffer only contains excluded pixels (included pixels were discarded by the save pass's stencil test and are zero). The shader checks for non-zero values to decide what to overwrite.
+1. **Save pass** (after `DiffuseGlobalFullscreenPass`, before MSAA resolve): A FullscreenTriangle pass with hardware stencil testing against the MSAA depth-stencil. Reads the MSAA diffuse buffer and writes excluded pixels to an MSAA temp buffer. Stencil test (`NotEqual` with ref 0x80, mask 0x80) ensures only excluded pixels are processed. Both render target and depth-stencil are MSAA -- no mismatch. The temp buffer must be explicitly cleared to `(0,0,0,0)` via `LoadAction: Clear` so that pixels rejected by the stencil test have zero alpha.
+2. **Temp resolve pass** (after `MSAAResolveDiffusePass`): Resolves the MSAA temp buffer to a non-MSAA texture. Reuses the engine's existing `MSAAResolveColorTemplate` -- no custom resolve shader needed.
+3. **Restore pass** (after `Ssao`): Reads the resolved non-MSAA temp and overwrites the SSAO-darkened diffuse for excluded pixels. No stencil needed -- the temp buffer only contains excluded pixels (included pixels were rejected by the save pass's stencil test and remain zero from the clear). The shader checks `saved.a == 0` to identify unsaved pixels and discards them, preserving SSAO-darkened values for included materials.
 
-**Why this works on both backends:** No stencil texture reads. The save pass uses hardware stencil testing (a GPU fixed-function operation that works on all backends). The restore pass doesn't need stencil at all -- it uses the temp buffer contents as the mask.
+**Why this works on both backends:** No stencil texture reads. The save pass uses hardware stencil testing (a GPU fixed-function operation). The restore pass uses the temp buffer contents as the mask. Neither operation has backend-specific issues.
+
+**Pipeline insertion points:** All three passes are injected by `PreMsaaSsaoStencilExclusionFeatureProcessor_ClaudeOpus` via `AddPassAfter` during pipeline construction. The passes are inserted at three different points in the OpaqueParent hierarchy:
+- Save → after `DiffuseGlobalFullscreenPass` (MSAA stage)
+- Resolve → after `MSAAResolveDiffusePass` (resolve stage)
+- Restore → after `Ssao` (post-processing stage)
 
 **Tradeoffs compared to Approach 2:**
 - 3 passes instead of 2 (save + resolve + restore)
-- An MSAA temp buffer (same size as the MSAA diffuse -- large) plus its resolved non-MSAA copy
-- More complex pipeline wiring (passes at two different pipeline stages)
+- An MSAA temp buffer (same size as the MSAA diffuse) plus its resolved non-MSAA copy
+- More complex pipeline wiring (passes at three different pipeline stages)
 - But: works on DX12 and Vulkan without any engine fixes
 
-This is the recommended next step for cross-platform support. It can be implemented at the project level using the same FeatureProcessor `AddPassBefore`/`AddPassAfter` pattern.
+**Files:**
+
+| File | Purpose |
+|---|---|
+| `Shaders/.../PreMsaaStencilSave_ClaudeOpus/` | Save shader: fullscreen copy with hardware stencil config in .shader (NotEqual 0x80) |
+| `Shaders/.../PreMsaaStencilRestore_ClaudeOpus/` | Restore shader: fullscreen copy, discards pixels with alpha == 0 |
+| `Passes/.../PreMsaaStencilSave_ClaudeOpus.pass` | Save pass template: MSAA temp with `MultisampleSource`, `LoadAction: Clear`, `StencilRef: 128` |
+| `Passes/.../PreMsaaStencilRestore_ClaudeOpus.pass` | Restore pass template: reads resolved temp, writes diffuse with `LoadAction: Load` |
+| `Gem/Source/.../PreMsaaSsaoStencilExclusionFeatureProcessor_ClaudeOpus.*` | FeatureProcessor: injects 3 passes during pipeline construction |
+| `Gem/Source/.../PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus.*` | System component: registers FP, loads templates, enables on scene |
+
+**Shared with Approach 2** (both approaches use these):
+
+| File | Purpose |
+|---|---|
+| `Shaders/.../Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.*` | Custom depth pass with WriteMask 0x7F |
+| `Passes/.../PassTemplates_ClaudeOpus.azasset` | Registers all pass templates (both approaches) |
+
+**Switching between approaches:** Both system components provide the same service (`SsaoStencilExclusionService_ClaudeOpus`) and are mutually exclusive. In `O3DEProjectPlaygroundCHModule.cpp`, toggle which component is listed in `GetRequiredSystemComponents()`.
 
 ### Workaround: Normal Buffer Detection (Hacky, Both Backends)
 
@@ -370,10 +393,11 @@ This approach requires wiring the depth-stencil into the SsaoParent pass hierarc
 
 ### Comparison
 
-| | Disable Globally | Post-MSAA Stencil Save/Restore (Approach 2) | Pre-MSAA Hardware Stencil (Approach 3) | Replace Modulation Pass (Approach 4) |
+| | Disable Globally | Post-MSAA Save/Restore (Approach 2) | **Pre-MSAA Hardware Stencil (Approach 3)** | Replace Modulation Pass (Approach 4) |
 |---|---|---|---|---|
+| **Status** | Available | Implemented (Vulkan only) | **Active implementation** | Reference only |
 | Per-material control | No | Yes | Yes | Yes |
-| DX12 support | Yes | Vulkan only (engine bug) | Both backends | Requires pass JSON overrides |
+| DX12 support | Yes | Vulkan only (engine bug) | **Both backends** | Requires pass JSON overrides |
 | Passes added | 0 | 2 | 3 | 0 (replaces 1) |
 | Extra VRAM | None | ~32-128MB temp (non-MSAA) | ~64-256MB temp (MSAA) + resolve | None |
 | Maintenance | None | Low (C++ + pass templates) | Moderate (C++ + pass templates) | High (JSON pass overrides) |

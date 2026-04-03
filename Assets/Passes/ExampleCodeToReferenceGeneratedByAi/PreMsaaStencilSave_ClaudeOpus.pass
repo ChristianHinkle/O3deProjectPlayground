@@ -1,0 +1,96 @@
+{
+    // Pre-MSAA Stencil Save Pass
+    //
+    // Runs BEFORE the MSAA resolve. Both the diffuse and depth-stencil are MSAA at this
+    // pipeline stage, so hardware stencil testing works (matching sample counts).
+    //
+    // Copies excluded pixels' diffuse to an MSAA temp buffer. The hardware stencil test
+    // (configured in the shader) rejects included pixels (bit 0x80 set).
+    //
+    // The temp buffer is a transient MSAA image matching the source's size, format, and
+    // multisample state. It must be resolved to non-MSAA before the restore pass can use it.
+    //
+    // Works on both DX12 and Vulkan -- no stencil texture reads needed.
+
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "PassAsset",
+    "ClassData": {
+        "PassTemplate": {
+            "Name": "PreMsaaStencilSaveTemplate_ClaudeOpus",
+            "PassClass": "FullScreenTriangle",
+            "Slots": [
+                {
+                    // MSAA diffuse buffer to save FROM
+                    "Name": "SourceInput",
+                    "SlotType": "Input",
+                    "ScopeAttachmentUsage": "Shader"
+                },
+                {
+                    // MSAA depth-stencil for hardware stencil testing.
+                    // StencilRef is set in the .pass PassData (128 = 0x80).
+                    "Name": "DepthStencilInputOutput",
+                    "SlotType": "InputOutput",
+                    "ScopeAttachmentUsage": "DepthStencil",
+                    "LoadStoreAction": {
+                        "LoadAction": "Load",
+                        "StoreAction": "Store"
+                    }
+                },
+                {
+                    // MSAA temp buffer output (connected to transient image below).
+                    // Clear to (0,0,0,0) so pixels that fail the stencil test have zero alpha.
+                    // The restore pass checks alpha == 0 to identify unsaved pixels.
+                    "Name": "SavedOutput",
+                    "SlotType": "Output",
+                    "ScopeAttachmentUsage": "RenderTarget",
+                    "LoadStoreAction": {
+                        "ClearValue": {
+                            "Value": [0.0, 0.0, 0.0, 0.0]
+                        },
+                        "LoadAction": "Clear"
+                    }
+                }
+            ],
+            "ImageAttachments": [
+                {
+                    // Transient MSAA image for storing saved diffuse.
+                    // Size, format, and MSAA sample count all match the source diffuse.
+                    "Name": "PreMsaaSavedDiffuse",
+                    "SizeSource": {
+                        "Source": {
+                            "Pass": "This",
+                            "Attachment": "SourceInput"
+                        }
+                    },
+                    "FormatSource": {
+                        "Pass": "This",
+                        "Attachment": "SourceInput"
+                    },
+                    "MultisampleSource": {
+                        "Pass": "This",
+                        "Attachment": "SourceInput"
+                    }
+                }
+            ],
+            "Connections": [
+                {
+                    "LocalSlot": "SavedOutput",
+                    "AttachmentRef": {
+                        "Pass": "This",
+                        "Attachment": "PreMsaaSavedDiffuse"
+                    }
+                }
+            ],
+            "PassData": {
+                "$type": "FullscreenTrianglePassData",
+                "ShaderAsset": {
+                    "FilePath": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/PreMsaaStencilSave_ClaudeOpus/PreMsaaStencilSave_ClaudeOpus.shader"
+                },
+                // 128 = 0x80. Combined with the shader's NotEqual stencil func:
+                // pixels where (stencil & 0x80) != 0x80 pass (excluded pixels).
+                "StencilRef": 128
+            }
+        }
+    }
+}
