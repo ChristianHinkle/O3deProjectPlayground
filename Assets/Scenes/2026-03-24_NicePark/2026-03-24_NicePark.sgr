@@ -1,0 +1,612 @@
+{
+    "name": "2026-03-24_NicePark",
+    "children": [
+        {
+            "name": "Bench",
+            "transform": {
+                "translate": [
+                    5.960464477539063e-08,
+                    0.7843400835990906,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_001",
+            "materials": [
+                "Wood",
+                "MetalBench"
+            ]
+        },
+        {
+            "name": "Sidewalk",
+            "transform": {
+                "translate": [
+                    5.960464477539063e-08,
+                    0.7843400835990906,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_002",
+            "materials": [
+                "Sidewalk"
+            ]
+        },
+        {
+            "name": "Bush",
+            "transform": {
+                "translate": [
+                    2.555957317352295,
+                    -0.4282989501953125,
+                    0.10238336026668549
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Sphere_002",
+            "materials": [
+                "Bush"
+            ]
+        },
+        {
+            "name": "Tree",
+            "transform": {
+                "translate": [
+                    3.096388339996338,
+                    3.281815767288208,
+                    -0.026157138869166374
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Sphere",
+            "materials": [
+                "Bush",
+                "Wood"
+            ]
+        },
+        {
+            "name": "Road",
+            "transform": {
+                "translate": [
+                    -0.5186042785644531,
+                    -15.454400062561035,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cylinder",
+            "materials": [
+                "Asphalt",
+                "Sidewalk"
+            ]
+        },
+        {
+            "name": "BuildingWork",
+            "transform": {
+                "translate": [
+                    -3.814697265625e-06,
+                    -61.00043487548828,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_005",
+            "materials": [
+                "BuildingConcrete",
+                "Window"
+            ]
+        },
+        {
+            "name": "Building",
+            "transform": {
+                "translate": [
+                    -52.17182159423828,
+                    -60.89717483520508,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_006",
+            "materials": [
+                "BuildingConcrete"
+            ]
+        },
+        {
+            "name": "Building.001",
+            "transform": {
+                "translate": [
+                    46.828182220458984,
+                    -48.897186279296875,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_007",
+            "materials": [
+                "BuildingConcrete"
+            ]
+        },
+        {
+            "name": "Building.002",
+            "transform": {
+                "translate": [
+                    48.82817077636719,
+                    -223.89718627929688,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_008",
+            "materials": [
+                "BuildingConcrete"
+            ]
+        },
+        {
+            "name": "Building.003",
+            "transform": {
+                "translate": [
+                    -54.171844482421875,
+                    -305.8971862792969,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_009",
+            "materials": [
+                "BuildingConcrete"
+            ]
+        },
+        {
+            "name": "Grass_100m_Subdiv10x",
+            "transform": {
+                "translate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Plane_002",
+            "materials": [
+                "Grass"
+            ]
+        },
+        {
+            "name": "Water_100m",
+            "transform": {
+                "translate": [
+                    0.0,
+                    17.0,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Plane_003",
+            "materials": [
+                "WaterRiver"
+            ]
+        },
+        {
+            "name": "Forest",
+            "transform": {
+                "translate": [
+                    0.0,
+                    43.0,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Sphere_003",
+            "materials": [
+                "Bush"
+            ]
+        },
+        {
+            "name": "Tree.001",
+            "transform": {
+                "translate": [
+                    -18.545764923095703,
+                    1.6990642547607422,
+                    -0.026157138869166374
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Sphere",
+            "materials": [
+                "Bush",
+                "Wood"
+            ]
+        },
+        {
+            "name": "Tree.002",
+            "transform": {
+                "translate": [
+                    -1.9512310028076172,
+                    20.425289154052734,
+                    -0.026157138869166374
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Sphere",
+            "materials": [
+                "Bush",
+                "Wood"
+            ]
+        },
+        {
+            "name": "Bush.001",
+            "transform": {
+                "translate": [
+                    -7.896980285644531,
+                    -1.8797545433044434,
+                    0.10238359868526459
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Sphere_002",
+            "materials": [
+                "Bush"
+            ]
+        },
+        {
+            "name": "TreeCluster",
+            "transform": {
+                "translate": [
+                    -29.469223022460938,
+                    -15.31161117553711,
+                    0.10238407552242279
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    0.3375546336174011,
+                    0.3375546336174011,
+                    0.3375546336174011
+                ]
+            },
+            "mesh": "Sphere_004",
+            "materials": [
+                "Bush"
+            ]
+        },
+        {
+            "name": "SwingBench",
+            "transform": {
+                "translate": [
+                    -13.0,
+                    -3.2573165893554688,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_011",
+            "materials": [
+                "Wood",
+                "MetalBench"
+            ]
+        },
+        {
+            "name": "PlaneGrass",
+            "transform": {
+                "translate": [
+                    0.0,
+                    0.0,
+                    -10.482583999633789
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Plane_006",
+            "materials": [
+                "Grass"
+            ]
+        },
+        {
+            "name": "PlaneSidewalk",
+            "transform": {
+                "translate": [
+                    0.0,
+                    19.020490646362305,
+                    -9.814736366271973
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Plane_007",
+            "materials": [
+                "Sidewalk"
+            ]
+        },
+        {
+            "name": "PlaneRiver",
+            "transform": {
+                "translate": [
+                    3.814697265625e-06,
+                    50.996971130371094,
+                    -9.814736366271973
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Plane_008",
+            "materials": [
+                "WaterRiver"
+            ]
+        },
+        {
+            "name": "Building.004",
+            "transform": {
+                "translate": [
+                    471.82818603515625,
+                    -111.897216796875,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_012",
+            "materials": [
+                "BuildingConcrete"
+            ]
+        },
+        {
+            "name": "Building.005",
+            "transform": {
+                "translate": [
+                    425.82818603515625,
+                    -276.897216796875,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_013",
+            "materials": [
+                "BuildingConcrete"
+            ]
+        },
+        {
+            "name": "Building.006",
+            "transform": {
+                "translate": [
+                    -306.9624328613281,
+                    -377.8971862792969,
+                    0.0
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Cube_014",
+            "materials": [
+                "BuildingConcrete"
+            ]
+        },
+        {
+            "name": "PlaneAsphalt",
+            "transform": {
+                "translate": [
+                    -1.9073486328125e-06,
+                    -26.0,
+                    0.05687052011489868
+                ],
+                "rotate": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            },
+            "mesh": "Plane_009",
+            "materials": [
+                "Asphalt"
+            ]
+        }
+    ]
+}
