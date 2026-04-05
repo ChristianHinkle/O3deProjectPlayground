@@ -2,10 +2,14 @@
 // Copies saved diffuse values back to the post-SSAO diffuse buffer for excluded pixels.
 // Runs AFTER the SSAO pass, where the diffuse is non-MSAA (resolved).
 //
+// Reads the MSAA temp buffer directly (Texture2DMS) using sample 0, skipping the
+// resolve step entirely. This avoids MSAA resolve edge blending that would produce
+// gray outlines at mesh silhouettes (the resolve averages saved pixels with the
+// clear color at edges, creating blended intermediate values).
+//
 // No stencil testing is needed here. The temp buffer was written by the save pass
 // which used hardware stencil to only save excluded pixels. Included pixels in the
-// temp buffer are zero (from the clear). We check for non-zero alpha to identify
-// saved pixels and overwrite them in the diffuse.
+// temp buffer are zero (from the clear). We check alpha to identify saved pixels.
 
 #include <Atom/Features/SrgSemantics.azsli>
 #include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
@@ -13,26 +17,19 @@
 
 ShaderResourceGroup PassSrg : SRG_PerPass
 {
-    Texture2D<float4> m_source;
+    Texture2DMS<float4> m_source;  // MSAA temp buffer (not resolved)
 }
 
 PSOutput MainPS(VSOutput IN)
 {
     uint2 screenCoords = uint2(IN.m_position.xy);
 
-    float4 saved = PassSrg::m_source.Load(int3(screenCoords, 0));
+    // Load sample 0 directly from the MSAA buffer. No resolve = no edge blending.
+    float4 saved = PassSrg::m_source.Load(screenCoords, 0);
 
-    // The temp buffer is cleared to (0,0,0,0). Saved pixels have alpha = -1
-    // (from the forward pass's subsurface scattering flag in m_diffuseColor.a).
-    // At mesh silhouette edges, the MSAA resolve blends saved pixels (-1 alpha)
-    // with the clear value (0 alpha), producing intermediate values like -0.5.
-    // Reject these edge pixels to prevent gray outlines. Interior saved pixels
-    // have alpha at or very near -1.
-    // Keep only pixels where alpha is at or very near -1 (fully saved interior pixels).
-    // Discard clear pixels (alpha = 0) and MSAA edge pixels (alpha between -1 and 0).
-    // Epsilon provides tolerance for floating point precision and any intermediate
-    // blending that renderer passes may introduce.
-    static const float ALPHA_EPSILON = 0.01;
+    // Saved pixels have alpha = -1 (from the forward pass's m_diffuseColor.a).
+    // Clear pixels have alpha = 0. Discard anything that isn't a fully saved pixel.
+    static const float ALPHA_EPSILON = 0.01;  // Tolerance for floating point precision
     if (saved.a > -1.0 + ALPHA_EPSILON)
     {
         discard;

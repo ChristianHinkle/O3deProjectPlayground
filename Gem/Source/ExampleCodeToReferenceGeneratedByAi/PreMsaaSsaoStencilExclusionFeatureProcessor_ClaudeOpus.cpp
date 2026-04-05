@@ -75,51 +75,19 @@ namespace O3DEProjectPlaygroundCH
             }
         }
 
-        // --- Pass 2: Resolve MSAA temp to non-MSAA ---
-        // Uses the engine's existing MSAAResolveColorTemplate (same as MSAAResolveDiffusePass).
-        {
-            AZ::RPI::PassRequest request;
-            request.m_passName = AZ::Name("PreMsaaStencilResolve_ClaudeOpus");
-            request.m_templateName = AZ::Name("MSAAResolveColorTemplate");
-
-            // Input → the MSAA temp buffer from the save pass
-            AZ::RPI::PassConnection inputConn;
-            inputConn.m_localSlot = AZ::Name("Input");
-            inputConn.m_attachmentRef.m_pass = AZ::Name("PreMsaaStencilSave_ClaudeOpus");
-            inputConn.m_attachmentRef.m_attachment = AZ::Name("SavedOutput");
-            request.m_connections.push_back(inputConn);
-
-            // Output → resolved non-MSAA image (created internally by the template)
-
-            auto pass = passSystem->CreatePassFromRequest(&request);
-            if (pass)
-            {
-                // Insert after MSAAResolveDiffusePass (alongside other resolve passes)
-                if (renderPipeline->AddPassAfter(pass, AZ::Name("MSAAResolveDiffusePass")))
-                {
-                    AZ_TracePrintf("PreMsaaSsaoStencilExclusion_ClaudeOpus",
-                        "Inserted PreMsaaStencilResolve pass after MSAAResolveDiffusePass\n");
-                }
-            }
-            else
-            {
-                AZ_Warning("PreMsaaSsaoStencilExclusion_ClaudeOpus", false, "Failed to create resolve pass");
-                return;
-            }
-        }
-
-        // --- Pass 3: Restore (after Ssao) ---
-        // Reads the resolved non-MSAA temp and overwrites SSAO-darkened diffuse for excluded pixels.
+        // --- Pass 2: Restore (after Ssao) ---
+        // Reads the MSAA temp buffer directly (no resolve step) to avoid MSAA edge blending
+        // artifacts that would cause gray outlines at mesh silhouettes.
         {
             AZ::RPI::PassRequest request;
             request.m_passName = AZ::Name("PreMsaaStencilRestore_ClaudeOpus");
             request.m_templateName = AZ::Name("PreMsaaStencilRestoreTemplate_ClaudeOpus");
 
-            // SourceInput → resolved temp buffer from the resolve pass
+            // SourceInput → MSAA temp buffer directly from the save pass (no resolve)
             AZ::RPI::PassConnection sourceConn;
             sourceConn.m_localSlot = AZ::Name("SourceInput");
-            sourceConn.m_attachmentRef.m_pass = AZ::Name("PreMsaaStencilResolve_ClaudeOpus");
-            sourceConn.m_attachmentRef.m_attachment = AZ::Name("Output");
+            sourceConn.m_attachmentRef.m_pass = AZ::Name("PreMsaaStencilSave_ClaudeOpus");
+            sourceConn.m_attachmentRef.m_attachment = AZ::Name("SavedOutput");
             request.m_connections.push_back(sourceConn);
 
             // DiffuseInputOutput → post-SSAO non-MSAA diffuse buffer
