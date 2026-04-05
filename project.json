@@ -41,7 +41,6 @@
         "O3DEProjectPlaygroundCH",
         "O3deUtils_Core",
         "O3deUtils_Misc",
-        "o3dimport",
         "PhysX",
         "PrefabBuilder",
         "PrimitiveAssets",
@@ -51,7 +50,8 @@
         "ScriptEvents",
         "StartingPointInput",
         "TextureAtlas",
-        "WhiteBox"
+        "WhiteBox",
+        "o3dimport"
     ],
     "engine_version": "2.3.2"
 }
