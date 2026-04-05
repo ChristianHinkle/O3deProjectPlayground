@@ -19,6 +19,7 @@
         "Deps/O3deGemPlayground",
         "Deps/O3deUtils_Core",
         "Deps/O3deUtils_Misc",
+        "Deps/o3dimport",
         "Gem"
     ],
     "restricted": "O3deProjectPlayground",
@@ -40,6 +41,7 @@
         "O3DEProjectPlaygroundCH",
         "O3deUtils_Core",
         "O3deUtils_Misc",
+        "o3dimport",
         "PhysX",
         "PrefabBuilder",
         "PrimitiveAssets",
