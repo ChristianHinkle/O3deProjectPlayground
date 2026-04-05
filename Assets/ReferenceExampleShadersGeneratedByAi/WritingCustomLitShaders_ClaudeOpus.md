@@ -418,32 +418,31 @@ The active cross-platform approach. Uses the same stencil pattern as the engine'
 **How it works:**
 
 1. **Save pass** (after `DiffuseGlobalFullscreenPass`, before MSAA resolve): A FullscreenTriangle pass with hardware stencil testing against the MSAA depth-stencil. Reads the MSAA diffuse buffer and writes excluded pixels to an MSAA temp buffer. Stencil test (`NotEqual` with ref 0x80, mask 0x80) ensures only excluded pixels are processed. Both render target and depth-stencil are MSAA -- no mismatch. The temp buffer must be explicitly cleared to `(0,0,0,0)` via `LoadAction: Clear` so that pixels rejected by the stencil test have zero alpha.
-2. **Temp resolve pass** (after `MSAAResolveDiffusePass`): Resolves the MSAA temp buffer to a non-MSAA texture. Reuses the engine's existing `MSAAResolveColorTemplate` -- no custom resolve shader needed.
-3. **Restore pass** (after `Ssao`): Reads the resolved non-MSAA temp and overwrites the SSAO-darkened diffuse for excluded pixels. No stencil needed -- the temp buffer only contains excluded pixels (included pixels were rejected by the save pass's stencil test and remain zero from the clear). The shader checks `saved.a == 0` to identify unsaved pixels and discards them, preserving SSAO-darkened values for included materials.
+2. **Restore pass** (after `Ssao`): Reads the MSAA temp buffer directly using `Texture2DMS` and `Load(screenCoords, 0)` -- no MSAA resolve step. This avoids edge blending artifacts where the resolve would average saved pixels with the clear color at mesh silhouettes, producing gray outlines. The shader checks `saved.a > -1.0 + epsilon` to identify unsaved pixels (alpha = 0 from clear) and MSAA edge pixels, discarding them to preserve SSAO-darkened values. Saved interior pixels have alpha = -1 (from the forward pass's `m_diffuseColor.a`).
 
-**Why this works on both backends:** No stencil texture reads. The save pass uses hardware stencil testing (a GPU fixed-function operation). The restore pass uses the temp buffer contents as the mask. Neither operation has backend-specific issues.
+**Why this works on both backends:** No stencil texture reads. The save pass uses hardware stencil testing (a GPU fixed-function operation). The restore pass uses the MSAA temp buffer contents as the mask. Neither operation has backend-specific issues.
 
-**Pipeline insertion points:** All three passes are injected by `PreMsaaSsaoStencilExclusionFeatureProcessor_ClaudeOpus` via `AddPassAfter` during pipeline construction. The passes are inserted at three different points in the OpaqueParent hierarchy:
+**Pipeline insertion points:** Both passes are injected by `PreMsaaSsaoStencilExclusionFeatureProcessor_ClaudeOpus` via `AddPassAfter` during pipeline construction:
 - Save → after `DiffuseGlobalFullscreenPass` (MSAA stage)
-- Resolve → after `MSAAResolveDiffusePass` (resolve stage)
 - Restore → after `Ssao` (post-processing stage)
 
 **Tradeoffs compared to Approach 2:**
-- 3 passes instead of 2 (save + resolve + restore)
-- An MSAA temp buffer (same size as the MSAA diffuse) plus its resolved non-MSAA copy
-- More complex pipeline wiring (passes at three different pipeline stages)
+- 2 passes (same count as Approach 2)
+- An MSAA temp buffer (same size as the MSAA diffuse)
 - But: works on DX12 and Vulkan without any engine fixes
+
+**MSAA silhouette edge artifacts:** At mesh silhouette edges, MSAA samples contain mixed stencil values across samples. Passes that check stencil (DiffuseGlobalFullscreen, ReflectionComposite) may partially process edge pixels, adding small amounts of IBL or reflection that appear as faint light-colored fringes. This is a fundamental limitation of per-material stencil masking with MSAA. It's subtle and primarily visible against the sky. The same save/restore pattern could be extended to cover these passes if needed.
 
 **Files:**
 
 | File | Purpose |
 |---|---|
 | `Shaders/.../PreMsaaStencilSave_ClaudeOpus/` | Save shader: fullscreen copy with hardware stencil config in .shader (NotEqual 0x80) |
-| `Shaders/.../PreMsaaStencilRestore_ClaudeOpus/` | Restore shader: fullscreen copy, discards pixels with alpha == 0 |
+| `Shaders/.../PreMsaaStencilRestore_ClaudeOpus/` | Restore shader: reads MSAA temp via Texture2DMS, discards non-saved pixels by alpha check |
 | `Passes/.../PreMsaaStencilSave_ClaudeOpus.pass` | Save pass template: MSAA temp with `MultisampleSource`, `LoadAction: Clear`, `StencilRef: 128` |
-| `Passes/.../PreMsaaStencilRestore_ClaudeOpus.pass` | Restore pass template: reads resolved temp, writes diffuse with `LoadAction: Load` |
-| `Gem/Source/.../PreMsaaSsaoStencilExclusionFeatureProcessor_ClaudeOpus.*` | FeatureProcessor: injects 3 passes during pipeline construction |
-| `Gem/Source/.../PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus.*` | System component: registers FP, loads templates, enables on scene |
+| `Passes/.../PreMsaaStencilRestore_ClaudeOpus.pass` | Restore pass template: reads MSAA temp, writes diffuse with `LoadAction: Load` |
+| `Gem/Source/.../PreMsaaSsaoStencilExclusionFeatureProcessor_ClaudeOpus.*` | FeatureProcessor: injects 2 passes during pipeline construction |
+| `Gem/Source/.../PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus.*` | System component: registers FP, loads templates |
 
 **Shared with Approach 2** (both approaches use these):
 
@@ -473,8 +472,8 @@ This approach requires wiring the depth-stencil into the SsaoParent pass hierarc
 | **Status** | Available | Implemented (Vulkan only) | **Active implementation** | Reference only |
 | Per-material control | No | Yes | Yes | Yes |
 | DX12 support | Yes | Vulkan only (engine bug) | **Both backends** | Requires pass JSON overrides |
-| Passes added | 0 | 2 | 3 | 0 (replaces 1) |
-| Extra VRAM | None | ~32-128MB temp (non-MSAA) | ~64-256MB temp (MSAA) + resolve | None |
+| Passes added | 0 | 2 | 2 | 0 (replaces 1) |
+| Extra VRAM | None | ~32-128MB temp (non-MSAA) | ~64-256MB temp (MSAA) | None |
 | Maintenance | None | Low (C++ + pass templates) | Moderate (C++ + pass templates) | High (JSON pass overrides) |
 | Engine code duplication | None | None | None | ~670 lines of JSON |
 
