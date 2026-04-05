@@ -15,10 +15,34 @@
                 "$type": "EditorEntitySortComponent",
                 "Id": 1069995033707506449,
                 "Child Entity Order": [
-                    "Entity_[423767901064]",
                     "Entity_[503382925260]",
                     "Entity_[1190577692620]",
-                    "Entity_[797063919352]"
+                    "Entity_[797063919352]",
+                    "Entity_[383250014465]",
+                    "Entity_[387544981761]",
+                    "Entity_[391839949057]",
+                    "Entity_[396134916353]",
+                    "Entity_[400429883649]",
+                    "Entity_[404724850945]",
+                    "Entity_[409019818241]",
+                    "Entity_[413314785537]",
+                    "Entity_[417609752833]",
+                    "Entity_[421904720129]",
+                    "Entity_[426199687425]",
+                    "Entity_[430494654721]",
+                    "Entity_[434789622017]",
+                    "Entity_[439084589313]",
+                    "Entity_[443379556609]",
+                    "Entity_[447674523905]",
+                    "Entity_[451969491201]",
+                    "Entity_[456264458497]",
+                    "Entity_[460559425793]",
+                    "Entity_[464854393089]",
+                    "Entity_[469149360385]",
+                    "Entity_[473444327681]",
+                    "Entity_[477739294977]",
+                    "Entity_[482034262273]",
+                    "Entity_[486329229569]"
                 ]
             },
             "EditorInspectorComponent": {
@@ -114,61 +138,2288 @@
                 }
             }
         },
-        "Entity_[423767901064]": {
-            "Id": "Entity_[423767901064]",
-            "Name": "Ground",
+        "Entity_[383250014465]": {
+            "Id": "Entity_[383250014465]",
+            "Name": "Bench",
             "Components": {
                 "AZ::Render::EditorMeshComponent": {
                     "$type": "AZ::Render::EditorMeshComponent",
-                    "Id": 13153623050598920852,
+                    "Id": 5072122629154262722,
                     "Controller": {
                         "Configuration": {
                             "ModelAsset": {
                                 "assetId": {
-                                    "guid": "{0CD745C0-6AA8-569A-A68A-73A3270986C4}",
-                                    "subId": 277889906
+                                    "guid": "{7907059B-E517-5130-B00F-0165DE29E609}",
+                                    "subId": 275062140
                                 },
-                                "assetHint": "objects/groudplane/groundplane_512x512m.fbx.azmodel"
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_001.fbx.azmodel"
                             }
                         }
                     }
                 },
                 "EditorDisabledCompositionComponent": {
                     "$type": "EditorDisabledCompositionComponent",
-                    "Id": 7030973074722334158
+                    "Id": 15706684954017642014
                 },
                 "EditorEntityIconComponent": {
                     "$type": "EditorEntityIconComponent",
-                    "Id": 11576089813698542435
+                    "Id": 10899442616269450410
                 },
                 "EditorEntitySortComponent": {
                     "$type": "EditorEntitySortComponent",
-                    "Id": 11983683527099837503
+                    "Id": 4653587837631363118
                 },
                 "EditorInspectorComponent": {
                     "$type": "EditorInspectorComponent",
-                    "Id": 10570993493299992590
+                    "Id": 18260354538040062243
                 },
                 "EditorLockComponent": {
                     "$type": "EditorLockComponent",
-                    "Id": 11748999984254943245
+                    "Id": 15453899079835397251
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 15963501364250586801,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 1540077894
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{2A7B55A9-1B1E-59A2-8289-EEFB934D9E7F}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/metalbench.azmaterial"
+                                        }
+                                    }
+                                },
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 1561913453
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{6D595B9D-E2CB-570F-B8D2-097775AADD60}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/wood.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
                 },
                 "EditorOnlyEntityComponent": {
                     "$type": "EditorOnlyEntityComponent",
-                    "Id": 762279591829026956
+                    "Id": 8802007845212800478
                 },
                 "EditorPendingCompositionComponent": {
                     "$type": "EditorPendingCompositionComponent",
-                    "Id": 1567980341748280371
+                    "Id": 17013631645494231017
                 },
                 "EditorVisibilityComponent": {
                     "$type": "EditorVisibilityComponent",
-                    "Id": 6181747400721324953
+                    "Id": 13455007916410708710
                 },
                 "TransformComponent": {
                     "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
-                    "Id": 14468614225117874139,
+                    "Id": 12016547870309540711,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            5.960464477539063e-8,
+                            0.7843400835990906,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[387544981761]": {
+            "Id": "Entity_[387544981761]",
+            "Name": "Sidewalk",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 6952513386024257276,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{3EDCAEDE-1A34-5DE5-8565-DA51F9EF39F2}",
+                                    "subId": 275532998
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_002.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 7592732167141197974
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 8871563282978708683
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 11672189129698744839
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 11104660007117665856
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 8141721030146795352
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 3905249363243444051,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 4056894574
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{5AD2BB36-8EAB-55E1-9149-EFEF6777780B}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/sidewalk.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 1371064393602662077
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 5548312784948802550
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 16378456291526347284
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 16248553981553019616,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            5.960464477539063e-8,
+                            0.7843400835990906,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[391839949057]": {
+            "Id": "Entity_[391839949057]",
+            "Name": "Bush",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 17729798053311972870,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{E897C265-FDB4-5D1D-8BE4-C85FBFCA0233}",
+                                    "subId": 276530324
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/sphere_002.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 456154466921343155
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 2383038338286074374
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 7039589835500394386
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 9039339860394506509
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 17753152386707658404
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 6811427506400364852,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2489655829
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{718EC48C-34FA-57FC-8050-A813F6A4B351}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/bush.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 16889574477526211808
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 9135681877859259619
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 13543807267537126010
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 11174705750406664530,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            2.555957317352295,
+                            -0.4282989501953125,
+                            0.10238336026668549
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[396134916353]": {
+            "Id": "Entity_[396134916353]",
+            "Name": "Tree",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 17471091794446590982,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{CFE42120-79E1-5EE1-A2A5-CD1C98568000}",
+                                    "subId": 284780167
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/sphere.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 1582673432493584296
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 11878343921939989443
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 18430129247390947140
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 10020589762540207871
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 17601497503064903273
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 2252651773759849653,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 1561913453
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{6D595B9D-E2CB-570F-B8D2-097775AADD60}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/wood.azmaterial"
+                                        }
+                                    }
+                                },
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2489655829
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{718EC48C-34FA-57FC-8050-A813F6A4B351}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/bush.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 11499351791437088434
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 14999875360753079902
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 14824911157225929403
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 13286586803517359105,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            3.096388339996338,
+                            3.281815767288208,
+                            -0.026157138869166374
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[400429883649]": {
+            "Id": "Entity_[400429883649]",
+            "Name": "Road",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 1752618227924612267,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{EBE7C5A2-ED76-5BDE-8283-AAA1B9391DA2}",
+                                    "subId": 268721130
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cylinder.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 17577050320675195258
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 2358955769811673030
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 468326806533741351
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 14992420588280853806
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 16466418840161349911
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 15648011733518407008,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 3122149005
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{AAB725BE-DBBA-58DB-94CB-85DB890756E0}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/asphalt.azmaterial"
+                                        }
+                                    }
+                                },
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 4056894574
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{5AD2BB36-8EAB-55E1-9149-EFEF6777780B}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/sidewalk.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 17057859625885756091
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 2486826527548170249
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 466248973512793073
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 7191332843505981515,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -0.5186042785644531,
+                            -15.454400062561035,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[404724850945]": {
+            "Id": "Entity_[404724850945]",
+            "Name": "BuildingWork",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 11294651060828993472,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{6B5222E7-1B37-5633-BED0-C2AB93E4A192}",
+                                    "subId": 269015397
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_005.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 9820739404019251660
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 8275143843916457533
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 1091934915932832250
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 9048618743093615047
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 10358813230876070799
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 3187235039797080596,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2800690520
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E7D125C2-22C4-53B0-9A9B-C64B67497DBC}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/buildingconcrete.azmaterial"
+                                        }
+                                    }
+                                },
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 3100309799
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{F740BBA1-F2B5-55D5-A0AD-0A3ED84BC351}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/window.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 11589117860460064696
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 1797560758926430025
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 17216310011299341417
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 3257785252903877296,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -0.000003814697265625,
+                            -61.00043487548828,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[409019818241]": {
+            "Id": "Entity_[409019818241]",
+            "Name": "Building",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 1335922713716269232,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{8BCE3A2C-41BB-575D-BBC9-BB8BAFA96435}",
+                                    "subId": 268536031
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_006.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 1555621538937477991
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 12766156818186763563
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 7037025055433227183
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 15473735120842044454
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 14009913328594398268
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 4765478138605891335,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2800690520
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E7D125C2-22C4-53B0-9A9B-C64B67497DBC}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/buildingconcrete.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 17852054140497670495
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 3082432304387635756
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 17873982471911321793
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 3807485118818702244,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -52.17182159423828,
+                            -60.89717483520508,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[413314785537]": {
+            "Id": "Entity_[413314785537]",
+            "Name": "Building.001",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 13759134105903942501,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{B40BF2A7-1F02-515B-A69E-C61F8EFFD805}",
+                                    "subId": 268875849
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_007.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 6523752204627633273
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 10751834196889320449
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 16584812225524580209
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 12384834202335235292
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 10417383461757803254
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 15604265922159710844,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2800690520
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E7D125C2-22C4-53B0-9A9B-C64B67497DBC}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/buildingconcrete.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 5250961096230073178
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 17459249123416738829
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 1570475095738401333
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 3163656464743805692,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            46.828182220458984,
+                            -48.897186279296875,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[417609752833]": {
+            "Id": "Entity_[417609752833]",
+            "Name": "Building.002",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 4975619841719922984,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{827CB321-817B-511B-8A1A-B9D0568164FF}",
+                                    "subId": 280602072
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_008.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 8940420178898582358
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 13324749911784714852
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 1172945409165613587
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 5943918031009864565
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 16266263229109212598
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 5569387315582975845,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2800690520
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E7D125C2-22C4-53B0-9A9B-C64B67497DBC}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/buildingconcrete.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 13313284719931317691
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 14126612669069796461
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 15538624509195469022
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 12816132918052747879,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            48.82817077636719,
+                            -223.89718627929688,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[421904720129]": {
+            "Id": "Entity_[421904720129]",
+            "Name": "Building.003",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 13421264733751695238,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{A107EBC2-C1C9-5368-A30B-D982D9CF8883}",
+                                    "subId": 280925518
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_009.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 4706244579282090812
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 5110006012111952569
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 8508494155859303072
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 3727194951675720578
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 10890814263743386905
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 14267661689034180917,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2800690520
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E7D125C2-22C4-53B0-9A9B-C64B67497DBC}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/buildingconcrete.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 3149502622991007381
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 7199026422445481507
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 14906676037038190782
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 5186390986475379630,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -54.171844482421875,
+                            -305.8971862792969,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[426199687425]": {
+            "Id": "Entity_[426199687425]",
+            "Name": "Grass_100m_Subdiv10x",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 2671781894495763624,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{668F97E9-E7A3-5C45-ABEE-C33E05A7EC40}",
+                                    "subId": 278343390
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/plane_002.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 17245551119372285416
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 15210693467424267802
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 6401118965348578245
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 16362960769503941489
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 10730192016844078885
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 4359785016908744992,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 120559839
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E0BD2637-80F9-5873-877B-D94E1CAFDABA}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/grass.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 11378362211588536711
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 8271440136762796693
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 7911826775529124285
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 1588599205648506693,
                     "Parent Entity": "ContainerEntity"
+                }
+            }
+        },
+        "Entity_[430494654721]": {
+            "Id": "Entity_[430494654721]",
+            "Name": "Water_100m",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 16623976047158994518,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{3DB912A7-5D8A-5F02-8BAD-B122A653DC0F}",
+                                    "subId": 277880392
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/plane_003.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 8495280348838277159
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 8424435770868763680
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 10314703218569733953
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 629567535630798967
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 4354906368056196552
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 7604524891066541075,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2685924239
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{29782E77-0C3B-520B-A678-53F0F64410AA}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/waterriver.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 2743770972320718435
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 1249714187285195264
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 2929209707485487952
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 3701052097680204842,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            0.0,
+                            17.0,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[434789622017]": {
+            "Id": "Entity_[434789622017]",
+            "Name": "Forest",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 4463018087510718846,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{B3ABF6D7-A506-53C8-8E6A-CA1E9126D9D3}",
+                                    "subId": 276608002
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/sphere_003.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 16417527149972270331
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 10005993218532446837
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 1958005918835646793
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 711740660910656486
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 15399566025561137542
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 2483395936668277741,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2489655829
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{718EC48C-34FA-57FC-8050-A813F6A4B351}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/bush.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 9259673229055596543
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 11179404069369630986
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 2293296208534358748
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 10848296569468250181,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            0.0,
+                            43.0,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[439084589313]": {
+            "Id": "Entity_[439084589313]",
+            "Name": "Tree.001",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 9455601339219070936,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{CFE42120-79E1-5EE1-A2A5-CD1C98568000}",
+                                    "subId": 284780167
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/sphere.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 7385111791677395849
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 14964893435310092740
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 14010176132750056181
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 16894120905556670025
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 9239803879946328939
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 139693365636918729,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 1561913453
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{6D595B9D-E2CB-570F-B8D2-097775AADD60}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/wood.azmaterial"
+                                        }
+                                    }
+                                },
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2489655829
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{718EC48C-34FA-57FC-8050-A813F6A4B351}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/bush.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 7125531808180331745
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 3711004028636483885
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 6580433851128882922
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 16167984664655494930,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -18.545764923095703,
+                            1.6990642547607422,
+                            -0.026157138869166374
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[443379556609]": {
+            "Id": "Entity_[443379556609]",
+            "Name": "Tree.002",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 17631071611583274671,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{CFE42120-79E1-5EE1-A2A5-CD1C98568000}",
+                                    "subId": 284780167
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/sphere.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 4641244863941015435
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 147999355651606486
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 11994313007459840996
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 820726414580855023
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 8693027308942822971
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 9747418559278457952,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 1561913453
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{6D595B9D-E2CB-570F-B8D2-097775AADD60}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/wood.azmaterial"
+                                        }
+                                    }
+                                },
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2489655829
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{718EC48C-34FA-57FC-8050-A813F6A4B351}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/bush.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 20841428719869074
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 7814654747904404750
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 10734033151581958991
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 12481014216793571729,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -1.9512310028076172,
+                            20.425289154052734,
+                            -0.026157138869166374
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[447674523905]": {
+            "Id": "Entity_[447674523905]",
+            "Name": "Bush.001",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 5238598917627128709,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{E897C265-FDB4-5D1D-8BE4-C85FBFCA0233}",
+                                    "subId": 276530324
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/sphere_002.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 11677512290250381510
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 2007152701242937238
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 9903177918534130970
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 6845890811837147730
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 3752156826818784786
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 11102264951197185270,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2489655829
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{718EC48C-34FA-57FC-8050-A813F6A4B351}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/bush.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 16075269744514269474
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 5663775804346617475
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 3827571300845542259
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 16591478399701952059,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -7.896980285644531,
+                            -1.8797545433044434,
+                            0.10238359868526459
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[451969491201]": {
+            "Id": "Entity_[451969491201]",
+            "Name": "TreeCluster",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 796310508132351260,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{583D5295-D6A9-5797-9E3E-673713C8253A}",
+                                    "subId": 270016929
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/sphere_004.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 6374684267976511246
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 3695827836166719491
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 3471789711088526053
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 15382433311292806154
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 9727263962558094073
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 7894135186657784719,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2489655829
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{718EC48C-34FA-57FC-8050-A813F6A4B351}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/bush.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 2533191502159494210
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 12415311582223043343
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 13347272473933593631
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 9722948549296256449,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -29.469223022460938,
+                            -15.31161117553711,
+                            0.10238407552242279
+                        ],
+                        "UniformScale": 0.3375546336174011
+                    }
+                }
+            }
+        },
+        "Entity_[456264458497]": {
+            "Id": "Entity_[456264458497]",
+            "Name": "SwingBench",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 8989280609404380573,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{FDB68C71-9EC3-5542-B783-8E0A4B99760E}",
+                                    "subId": 276704317
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_011.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 4442655278986000202
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 7489641851624395869
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 12374800018358225017
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 17563494426082978543
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 16688032933334611067
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 9701817549865360797,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 1540077894
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{2A7B55A9-1B1E-59A2-8289-EEFB934D9E7F}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/metalbench.azmaterial"
+                                        }
+                                    }
+                                },
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 1561913453
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{6D595B9D-E2CB-570F-B8D2-097775AADD60}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/wood.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 14486312636480442191
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 13994893052866522613
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 1277875704070303755
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 17844963854147245038,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -13.0,
+                            -3.2573165893554688,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[460559425793]": {
+            "Id": "Entity_[460559425793]",
+            "Name": "PlaneGrass",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 12912553180346776505,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{FCE9616D-EA8A-5C1C-B32C-82B80C5316DF}",
+                                    "subId": 284879559
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/plane_006.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 4682620204841692008
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 2161159026513564790
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 6797897472131243999
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 16884508857178023556
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 10581126587264414230
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 13679328970521825103,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 120559839
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E0BD2637-80F9-5873-877B-D94E1CAFDABA}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/grass.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 5839078259054876299
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 13241901943314855404
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 4953130055337761800
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 16835545901903769973,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            0.0,
+                            0.0,
+                            -10.482583999633789
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[464854393089]": {
+            "Id": "Entity_[464854393089]",
+            "Name": "PlaneSidewalk",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 8120491785790792737,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{7D94E883-E684-54DE-B50F-DC620C60DD39}",
+                                    "subId": 285071953
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/plane_007.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 9614401857734914694
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 15249180733809908384
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 13469197834352899088
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 12818554131066315360
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 2447092465656937033
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 5241083839314182839,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 4056894574
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{5AD2BB36-8EAB-55E1-9149-EFEF6777780B}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/sidewalk.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 14638661494695951258
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 11119140465420512508
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 473661177015906062
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 6299328725004370439,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            0.0,
+                            19.020490646362305,
+                            -9.814736366271973
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[469149360385]": {
+            "Id": "Entity_[469149360385]",
+            "Name": "PlaneRiver",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 2335971979932848915,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{7E12BEE4-4282-5386-961E-FAA062DAB4C3}",
+                                    "subId": 272811968
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/plane_008.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 12767342959556700898
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 18024196883488382429
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 11427854769838057806
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 13180813624009365616
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 10415903319380745499
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 14558220302000545588,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2685924239
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{29782E77-0C3B-520B-A678-53F0F64410AA}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/waterriver.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 2663411798705349442
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 13789408966195262516
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 2824454422843127966
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 2014102017231160914,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            0.000003814697265625,
+                            50.996971130371094,
+                            -9.814736366271973
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[473444327681]": {
+            "Id": "Entity_[473444327681]",
+            "Name": "Building.004",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 16625189259443126266,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{5AA69EF2-AE7C-51A1-9C5C-43902E770453}",
+                                    "subId": 276266375
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_012.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 9545262382848432682
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 16887381496894820803
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 9886678500166732872
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 14832106250670670868
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 3856293101020574551
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 7051242310115588246,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2800690520
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E7D125C2-22C4-53B0-9A9B-C64B67497DBC}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/buildingconcrete.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 104517020714550172
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 10708495430020191027
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 16900782360545944171
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 3841141703132513790,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            471.82818603515625,
+                            -111.897216796875,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[477739294977]": {
+            "Id": "Entity_[477739294977]",
+            "Name": "Building.005",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 1377429571766572114,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{31D195DF-1E5F-50A4-90D7-D5F5B00DEDC8}",
+                                    "subId": 275795217
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_013.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 10591264220948585763
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 18050172829553725268
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 10419942878665830122
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 15937695997306529519
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 16417229812778060872
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 17805386305206743854,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2800690520
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E7D125C2-22C4-53B0-9A9B-C64B67497DBC}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/buildingconcrete.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 1005719583787527113
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 13493967303557375057
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 9243084125491109545
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 12681441573291089969,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            425.82818603515625,
+                            -276.897216796875,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[482034262273]": {
+            "Id": "Entity_[482034262273]",
+            "Name": "Building.006",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 8550340712148893358,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{0D395E63-4761-57EF-8F68-4845C4420006}",
+                                    "subId": 269801650
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/cube_014.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 489983547594942507
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 15271566607967281845
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 15296892285279372700
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 8009009524535071457
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 5192052669652697005
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 7027924046943028426,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 2800690520
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{E7D125C2-22C4-53B0-9A9B-C64B67497DBC}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/buildingconcrete.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 2820858318401681383
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 875561912427003131
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 6514065572143066744
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 3656534430921982552,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -306.9624328613281,
+                            -377.8971862792969,
+                            0.0
+                        ]
+                    }
+                }
+            }
+        },
+        "Entity_[486329229569]": {
+            "Id": "Entity_[486329229569]",
+            "Name": "PlaneAsphalt",
+            "Components": {
+                "AZ::Render::EditorMeshComponent": {
+                    "$type": "AZ::Render::EditorMeshComponent",
+                    "Id": 8334979665819077724,
+                    "Controller": {
+                        "Configuration": {
+                            "ModelAsset": {
+                                "assetId": {
+                                    "guid": "{E32E874C-0F93-5A3E-89C9-D26EE2976A77}",
+                                    "subId": 273020758
+                                },
+                                "assetHint": "assets/scenes/2026-03-24_nicepark/meshes/plane_009.fbx.azmodel"
+                            }
+                        }
+                    }
+                },
+                "EditorDisabledCompositionComponent": {
+                    "$type": "EditorDisabledCompositionComponent",
+                    "Id": 2687233469450972077
+                },
+                "EditorEntityIconComponent": {
+                    "$type": "EditorEntityIconComponent",
+                    "Id": 943454573684145728
+                },
+                "EditorEntitySortComponent": {
+                    "$type": "EditorEntitySortComponent",
+                    "Id": 15034430182432523640
+                },
+                "EditorInspectorComponent": {
+                    "$type": "EditorInspectorComponent",
+                    "Id": 1543050831893005148
+                },
+                "EditorLockComponent": {
+                    "$type": "EditorLockComponent",
+                    "Id": 12496009716037290586
+                },
+                "EditorMaterialComponent": {
+                    "$type": "EditorMaterialComponent",
+                    "Id": 3540581334112120999,
+                    "Controller": {
+                        "Configuration": {
+                            "materials": [
+                                {
+                                    "Key": {
+                                        "materialSlotStableId": 3122149005
+                                    },
+                                    "Value": {
+                                        "MaterialAsset": {
+                                            "assetId": {
+                                                "guid": "{AAB725BE-DBBA-58DB-94CB-85DB890756E0}"
+                                            },
+                                            "assetHint": "assets/scenes/2026-03-24_nicepark/materials/asphalt.azmaterial"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                },
+                "EditorOnlyEntityComponent": {
+                    "$type": "EditorOnlyEntityComponent",
+                    "Id": 13724488832320460582
+                },
+                "EditorPendingCompositionComponent": {
+                    "$type": "EditorPendingCompositionComponent",
+                    "Id": 10020444265397714260
+                },
+                "EditorVisibilityComponent": {
+                    "$type": "EditorVisibilityComponent",
+                    "Id": 10428265338294430520
+                },
+                "TransformComponent": {
+                    "$type": "{27F1E1A1-8D9D-4C3B-BD3A-AFB9762449C0} TransformComponent",
+                    "Id": 9667630283935059741,
+                    "Parent Entity": "ContainerEntity",
+                    "Transform Data": {
+                        "Translate": [
+                            -0.0000019073486328125,
+                            -26.0,
+                            0.05687052011489868
+                        ]
+                    }
                 }
             }
         },
