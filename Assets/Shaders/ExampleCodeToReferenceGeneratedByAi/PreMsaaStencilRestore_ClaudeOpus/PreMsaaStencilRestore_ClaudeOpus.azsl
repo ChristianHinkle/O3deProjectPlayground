@@ -22,10 +22,18 @@ PSOutput MainPS(VSOutput IN)
 
     float4 saved = PassSrg::m_source.Load(int3(screenCoords, 0));
 
-    // The temp buffer is cleared to (0,0,0,0). Only excluded pixels have data
-    // (written by the save pass's stencil-tested copy). If alpha is 0, this pixel
-    // wasn't saved -- discard to preserve the SSAO-darkened diffuse value.
-    if (saved.a == 0.0)
+    // The temp buffer is cleared to (0,0,0,0). Saved pixels have alpha = -1
+    // (from the forward pass's subsurface scattering flag in m_diffuseColor.a).
+    // At mesh silhouette edges, the MSAA resolve blends saved pixels (-1 alpha)
+    // with the clear value (0 alpha), producing intermediate values like -0.5.
+    // Reject these edge pixels to prevent gray outlines. Interior saved pixels
+    // have alpha at or very near -1.
+    // Keep only pixels where alpha is at or very near -1 (fully saved interior pixels).
+    // Discard clear pixels (alpha = 0) and MSAA edge pixels (alpha between -1 and 0).
+    // Epsilon provides tolerance for floating point precision and any intermediate
+    // blending that renderer passes may introduce.
+    static const float ALPHA_EPSILON = 0.01;
+    if (saved.a > -1.0 + ALPHA_EPSILON)
     {
         discard;
     }
