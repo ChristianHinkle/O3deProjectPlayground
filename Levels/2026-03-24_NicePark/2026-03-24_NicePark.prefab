@@ -1072,7 +1072,7 @@
         },
         "Entity_[426199687425]": {
             "Id": "Entity_[426199687425]",
-            "Name": "Grass_100m_Subdiv10x",
+            "Name": "Grass_100m_Subdiv9x",
             "Components": {
                 "AZ::Render::EditorMeshComponent": {
                     "$type": "AZ::Render::EditorMeshComponent",
