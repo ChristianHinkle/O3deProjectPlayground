@@ -1,0 +1,21 @@
+{
+    "materialType": "@gemroot:Atom_Feature_Common@/Assets/Materials/Types/StandardPBR.materialtype",
+    "materialTypeVersion": 5,
+    "propertyValues": {
+        "specularF0.enableMultiScatterCompensation": true,
+        "baseColor.color": [
+            0.05799882858991623,
+            0.05326244980096817,
+            0.0651329830288887,
+            1.0
+        ],
+        "metallic.factor": 0.0,
+        "roughness.factor": 0.5,
+        "opacity.factor": 1.0,
+        "opacity.mode": "Opaque",
+        "normal.flipX": false,
+        "normal.flipY": true,
+        "specularF0.factor": 0.5,
+        "specularF0.useTexture": false
+    }
+}
