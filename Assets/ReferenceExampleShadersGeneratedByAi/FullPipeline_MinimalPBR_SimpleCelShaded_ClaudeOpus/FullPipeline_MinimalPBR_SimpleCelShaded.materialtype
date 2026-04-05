@@ -87,6 +87,23 @@
                         "type": "ShaderInput",
                         "id": "m_specularThreshold"
                     }
+                },
+                {
+                    // Must be true for reflection probe data to be populated in ObjectSrg.
+                    // MeshFeatureProcessor::MaterialRequiresForwardPassIblSpecular() checks for
+                    // this shader option being set to 1, and only then does it fill in
+                    // ObjectSrg::m_reflectionProbeData / m_reflectionProbeCubeMap. Without this,
+                    // ApplyIblForward() still runs (because FORCE_IBL_IN_FORWARD_PASS=1 in the
+                    // shader), but it reads zeroed probe data and produces no reflections.
+                    "id": "forwardPassIBLSpecular",
+                    "displayName": "Forward Pass IBL Specular",
+                    "description": "Enables reflection probe support by telling the mesh feature processor to populate ObjectSrg with probe data.",
+                    "type": "Bool",
+                    "defaultValue": true,
+                    "connection": {
+                        "type": "ShaderOption",
+                        "name": "o_materialUseForwardPassIBLSpecular"
+                    }
                 }
             ]
         }

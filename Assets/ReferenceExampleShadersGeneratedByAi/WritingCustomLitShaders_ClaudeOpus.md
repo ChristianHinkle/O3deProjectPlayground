@@ -331,6 +331,28 @@ At grazing angles, Fresnel shifts energy from diffuse to specular. The diffuse b
 
 If specular is not desired at all (pure flat cel-shading), setting `diffuseResponse = 1.0` and `specularResponse = 0` is acceptable -- it trades energy conservation for guaranteed flat diffuse with no view-dependent variation. Zero `specularLighting[0]` after `ApplyIblForward` as shown in the zeroing section above. The `m_specularF0` and `m_normal` output zeroing (layers 2 and 3) are still needed either way to prevent the post-forward-pass reflection pipeline from adding its own specular on top.
 
+### Reflection Probe Support (`o_materialUseForwardPassIBLSpecular`)
+
+`FORCE_IBL_IN_FORWARD_PASS` alone is **not enough** for reflection probes to work. `ApplyIblForward` will run, call `GetIblSpecular`, and read `ObjectSrg::m_reflectionProbeData` -- but that data stays zeroed unless the C++ side populates it. `MeshFeatureProcessor::MaterialRequiresForwardPassIblSpecular` (`MeshFeatureProcessor.cpp`) scans each material's shader items looking for the `o_materialUseForwardPassIBLSpecular` shader option set to 1, and only then sets `m_hasForwardPassIblSpecularMaterial`, which gates the probe data upload into `ObjectSrg::m_reflectionProbeData` / `m_reflectionProbeCubeMap`.
+
+`FORCE_IBL_IN_FORWARD_PASS` is the *shader-side* switch. `o_materialUseForwardPassIBLSpecular` is the *C++-side* switch that actually delivers the probe data. You need both.
+
+The fix is a material property connected to the shader option, defaulting to true:
+
+```json
+{
+    "id": "forwardPassIBLSpecular",
+    "type": "Bool",
+    "defaultValue": true,
+    "connection": {
+        "type": "ShaderOption",
+        "name": "o_materialUseForwardPassIBLSpecular"
+    }
+}
+```
+
+Without this, custom shaders see the global IBL cubemap (which comes from SceneSrg, not ObjectSrg) but never any reflection probe contribution, even when a probe overlaps the mesh. Standard PBR materials include this via `GeneralCommonPropertyGroup.json`, which is why they "just work."
+
 ## Per-Material SSAO Exclusion
 
 ### The Problem
