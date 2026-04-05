@@ -301,7 +301,7 @@ ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
 ApplyIblForward(surface, lightingData);
 // specularLighting[0] now contains: all per-light highlights + IBL reflections
 
-float specLuminance = dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722));
+float specLuminance = GetLuminance(lightingData.specularLighting[0]);
 float specBand = step(specularThreshold, specLuminance);  // specularThreshold is a material property (default 0.3)
 float3 celSpecular = specBand * litColor;
 
@@ -323,8 +323,8 @@ ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
 ApplyIblForward(surface, lightingData);
 
 // Quantize BOTH into bands -- energy-conserved cel-shading
-float diffuseBand = step(diffuseThreshold, dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722)));
-float specBand = step(specularThreshold, dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722)));
+float diffuseBand = step(diffuseThreshold, GetLuminance(lightingData.diffuseLighting));
+float specBand = step(specularThreshold, GetLuminance(lightingData.specularLighting[0]));
 ```
 
 At grazing angles, Fresnel shifts energy from diffuse to specular. The diffuse band might flip from lit to unlit. The specular band might flip from off to on. Both transitions are hard-edged. The total energy never exceeds what came in -- the quantization makes the energy-conserved transition crisp rather than smooth.
@@ -849,7 +849,7 @@ The solution is to **combine LightUtil overrides with a post-process quantizatio
 
 ```hlsl
 // After the engine pipeline runs (overridden + PBR lights all accumulated):
-float diffuseLuminance = dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722));
+float diffuseLuminance = GetLuminance(lightingData.diffuseLighting);
 float band = step(0.5, diffuseLuminance);
 float3 celColor = lerp(MaterialSrg::m_unlitColor, MaterialSrg::m_litColor, band);
 ```

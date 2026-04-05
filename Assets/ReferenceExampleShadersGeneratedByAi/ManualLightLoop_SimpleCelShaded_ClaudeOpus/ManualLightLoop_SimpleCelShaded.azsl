@@ -6,6 +6,7 @@
 #include <Atom/RPI/ShaderResourceGroups/UnusedFallbackDrawSrg.azsli>
 #include <Atom/Features/InstancedTransforms.azsli>
 #include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
+#include <Atom/Features/PostProcessing/PostProcessUtil.azsli>
 
 ShaderResourceGroup ManualLightLoop_SimpleCelShadedSrg : SRG_PerMaterial
 {
@@ -46,7 +47,7 @@ float3 WorldToCubemapCoords(float3 dir)
 float3 ComputePointLightIntensity(float3 worldPos, float3 lightPos, float invAttenuationRadiusSq, float3 rgbIntensity, out float3 outDirToLight)
 {
     float3 toLight = lightPos - worldPos;
-    float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
+    float distSq = max(dot(toLight, toLight), 0.001 * 0.001);  // Clamp to 1mm minimum distance to avoid division by zero
     outDirToLight = toLight * rsqrt(distSq);
 
     float falloff = distSq * invAttenuationRadiusSq;
@@ -92,7 +93,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
     // Rough mapping from PBR roughness: shininess ≈ 2/(roughness^4) - 2.
     // roughness 1.0 → ~0 (invisible), 0.5 → ~30, 0.2 → ~1248, 0.0 → mirror.
     float roughness = ManualLightLoop_SimpleCelShadedSrg::m_roughness;
-    float shininess = max(2.0 / max(pow(roughness, 4.0), 0.001) - 2.0, 0.0);
+    float shininess = max(2.0 / max(pow(roughness, 4.0), 0.001) - 2.0, 0.0);  // Approximate PBR roughness to Blinn-Phong exponent mapping
 
     // Accumulate diffuse and specular luminance separately, then step both into bands.
     float diffuseAmount = 0.0;
@@ -102,7 +103,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
     for (int dirIdx = 0; dirIdx < SceneSrg::m_directionalLightCount; dirIdx++)
     {
         float3 dirToLight = normalize(-SceneSrg::m_directionalLights[dirIdx].m_direction);
-        float intensity = dot(SceneSrg::m_directionalLights[dirIdx].m_rgbIntensityLux, float3(0.2126, 0.7152, 0.0722));
+        float intensity = GetLuminance(SceneSrg::m_directionalLights[dirIdx].m_rgbIntensityLux);
 
         float NdotL = saturate(dot(normal, dirToLight));
         diffuseAmount += NdotL * intensity;
@@ -120,7 +121,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
             ViewSrg::m_pointLights[ptIdx].m_position,
             ViewSrg::m_pointLights[ptIdx].m_invAttenuationRadiusSquared,
             ViewSrg::m_pointLights[ptIdx].m_rgbIntensityCandelas, ptDirToLight);
-        float intensity = dot(rgb, float3(0.2126, 0.7152, 0.0722));
+        float intensity = GetLuminance(rgb);
         float NdotL = saturate(dot(normal, ptDirToLight));
         diffuseAmount += NdotL * intensity;
         float3 halfVec = normalize(ptDirToLight + dirToCamera);
@@ -133,7 +134,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
             ViewSrg::m_simplePointLights[sptIdx].m_position,
             ViewSrg::m_simplePointLights[sptIdx].m_invAttenuationRadiusSquared,
             ViewSrg::m_simplePointLights[sptIdx].m_rgbIntensityCandelas, ptDirToLight);
-        float intensity = dot(rgb, float3(0.2126, 0.7152, 0.0722));
+        float intensity = GetLuminance(rgb);
         float NdotL = saturate(dot(normal, ptDirToLight));
         diffuseAmount += NdotL * intensity;
         float3 halfVec = normalize(ptDirToLight + dirToCamera);
@@ -153,7 +154,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
             ViewSrg::m_diskLights[spIdx].m_direction,
             ViewSrg::m_diskLights[spIdx].m_cosInnerConeAngle,
             ViewSrg::m_diskLights[spIdx].m_cosOuterConeAngle);
-        float intensity = dot(rgb, float3(0.2126, 0.7152, 0.0722)) * cone;
+        float intensity = GetLuminance(rgb) * cone;
         float NdotL = saturate(dot(normal, spDirToLight));
         diffuseAmount += NdotL * intensity;
         float3 halfVec = normalize(spDirToLight + dirToCamera);
@@ -170,7 +171,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
             ViewSrg::m_simpleSpotLights[sspIdx].m_direction,
             ViewSrg::m_simpleSpotLights[sspIdx].m_cosInnerConeAngle,
             ViewSrg::m_simpleSpotLights[sspIdx].m_cosOuterConeAngle);
-        float intensity = dot(rgb, float3(0.2126, 0.7152, 0.0722)) * cone;
+        float intensity = GetLuminance(rgb) * cone;
         float NdotL = saturate(dot(normal, spDirToLight));
         diffuseAmount += NdotL * intensity;
         float3 halfVec = normalize(spDirToLight + dirToCamera);
@@ -183,7 +184,7 @@ ForwardPassOutput MainPS(VSOutput psInput)
         float3 irradianceDir = RotateByQuaternion(normal, SceneSrg::m_iblOrientation);
         float3 iblSample = SceneSrg::m_diffuseEnvMap.Sample(SceneSrg::m_samplerEnv, WorldToCubemapCoords(irradianceDir)).rgb;
         float iblExposure = pow(2.0, SceneSrg::m_iblExposure);
-        float iblLuminance = dot(iblSample, float3(0.2126, 0.7152, 0.0722)) * iblExposure;
+        float iblLuminance = GetLuminance(iblSample) * iblExposure;
         diffuseAmount += iblLuminance;
     }
 
@@ -197,9 +198,9 @@ ForwardPassOutput MainPS(VSOutput psInput)
 
     psOutput.m_diffuseColor = float4(celDiffuse, 1.0);
     psOutput.m_specularColor = float4(celSpecular, 1.0);
-    psOutput.m_albedo = float4(litColor, 1.0);
-    psOutput.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);
-    psOutput.m_normal = float4(0.0, 0.0, 0.0, 0.0);
+    psOutput.m_albedo = float4(litColor, 1.0);  // Albedo used by DiffuseProbeGrid GI composite pass
+    psOutput.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);  // Zero specularF0 prevents the reflection pipeline from adding reflections
+    psOutput.m_normal = float4(0.0, 0.0, 0.0, 0.0);  // Zero normal + zero alpha disables IBL flag for reflection pipeline
 
     return psOutput;
 }

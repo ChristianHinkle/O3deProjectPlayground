@@ -21,6 +21,7 @@
 #include <Atom/Features/InstancedTransforms.azsli>
 #include <Atom/Features/Pipeline/Forward/ForwardPassSrg.azsli>
 #include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
+#include <Atom/Features/PostProcessing/PostProcessUtil.azsli>
 #include <Atom/Features/SrgSemantics.azsli>
 
 // --- Prerequisites: Surface, LightingData, and BRDF must be defined before custom utils ---
@@ -127,14 +128,14 @@ ForwardPassOutput MainPS(VSOutput IN)
     // Quantize diffuse into cel-shading bands.
     // The diffuse result includes per-light cel-shaded contributions (from our custom LightUtils)
     // plus diffuse IBL (from ApplyIblForward).
-    float diffuseLuminance = dot(lightingData.diffuseLighting, float3(0.2126, 0.7152, 0.0722));
+    float diffuseLuminance = GetLuminance(lightingData.diffuseLighting);
     float diffuseBand = step(MaterialSrg::m_diffuseThreshold, diffuseLuminance);
     float3 celDiffuse = lerp(MaterialSrg::m_unlitColor, MaterialSrg::m_litColor, diffuseBand);
 
     // Quantize specular into cel-shading bands.
     // specularLighting[0] is the combined result of per-light highlights + IBL reflections.
     // Stepping it quantizes all specular sources together.
-    float specLuminance = dot(lightingData.specularLighting[0], float3(0.2126, 0.7152, 0.0722));
+    float specLuminance = GetLuminance(lightingData.specularLighting[0]);
     float specBand = step(MaterialSrg::m_specularThreshold, specLuminance);
     float3 celSpecular = specBand * MaterialSrg::m_litColor;
 

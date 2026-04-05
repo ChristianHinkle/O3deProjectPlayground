@@ -64,7 +64,7 @@ class SimplePointLightUtil_Custom
     {
         real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
         radiusAttenuation = radiusAttenuation * radiusAttenuation;
-        real distSq = max(0.001 * 0.001, m_lightDistanceSquared);
+        real distSq = max(0.001 * 0.001, m_lightDistanceSquared);  // Clamp to 1mm minimum distance to avoid division by zero
         real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation;
 
         lightingData.diffuseLighting += CustomDiffuse(surface, m_surfaceToLightDirection, lightIntensity) * litRatio;

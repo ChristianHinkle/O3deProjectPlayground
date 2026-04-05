@@ -42,7 +42,7 @@ float3 WorldToCubemapCoords(float3 dir)
 float3 ComputePointLightIntensity(float3 worldPos, float3 lightPos, float invAttenuationRadiusSq, float3 rgbIntensity, out float3 outDirToLight)
 {
     float3 toLight = lightPos - worldPos;
-    float distSq = max(dot(toLight, toLight), 0.001 * 0.001);
+    float distSq = max(dot(toLight, toLight), 0.001 * 0.001);  // Clamp to 1mm minimum distance to avoid division by zero
     outDirToLight = toLight * rsqrt(distSq);
 
     float falloff = distSq * invAttenuationRadiusSq;
@@ -146,10 +146,10 @@ ForwardPassOutput MainPS(VSOutput psInput)
     }
 
     psOutput.m_diffuseColor = float4(diffuse, 1.0);
-    psOutput.m_specularColor = float4(0.0, 0.0, 0.0, 1.0);
+    psOutput.m_specularColor = float4(0.0, 0.0, 0.0, 1.0);  // No specular computed in this shader
     psOutput.m_albedo = float4(albedo, 1.0);
-    psOutput.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);
-    psOutput.m_normal = float4(0.0, 0.0, 0.0, 0.0);
+    psOutput.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);  // Zero specularF0 prevents the reflection pipeline from adding reflections
+    psOutput.m_normal = float4(0.0, 0.0, 0.0, 0.0);  // Zero normal + zero alpha disables IBL flag for reflection pipeline
 
     return psOutput;
 }

@@ -17,7 +17,7 @@
 real3 CelShadeDiffuse(Surface surface, real3 dirToLight, real3 lightIntensity)
 {
     real NdotL = saturate(dot(surface.GetDiffuseNormal(), dirToLight));
-    real celFactor = step(0.5, NdotL);
+    real celFactor = step(0.5, NdotL);  // Hardcoded per-light diffuse threshold (not the material property -- this is the per-light NdotL decision)
     return surface.albedo * celFactor * lightIntensity;
 }
 
@@ -85,7 +85,7 @@ class SimplePointLightUtil_CelShade
     {
         real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
         radiusAttenuation = radiusAttenuation * radiusAttenuation;
-        real distSq = max(0.001 * 0.001, m_lightDistanceSquared);
+        real distSq = max(0.001 * 0.001, m_lightDistanceSquared);  // Clamp to 1mm minimum distance to avoid division by zero
         real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / distSq) * radiusAttenuation;
 
         lightingData.diffuseLighting += CelShadeDiffuse(surface, m_surfaceToLightDirection, lightIntensity) * litRatio;
