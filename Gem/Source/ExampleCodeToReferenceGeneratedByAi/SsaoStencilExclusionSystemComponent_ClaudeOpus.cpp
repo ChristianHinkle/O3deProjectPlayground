@@ -5,8 +5,6 @@
 #include <AzCore/Serialization/SerializeContext.h>
 #include <Atom/RPI.Public/Pass/PassSystemInterface.h>
 #include <Atom/RPI.Public/FeatureProcessorFactory.h>
-#include <Atom/RPI.Public/RPISystemInterface.h>
-#include <Atom/RPI.Public/Scene.h>
 
 namespace O3DEProjectPlaygroundCH
 {
@@ -43,6 +41,9 @@ namespace O3DEProjectPlaygroundCH
 
     void SsaoStencilExclusionSystemComponent_ClaudeOpus::Activate()
     {
+        // Register the feature processor with the factory. The Scene automatically enables
+        // all registered feature processors via FeatureProcessorFactory::EnableAllForScene()
+        // when it's created -- no manual per-scene enabling needed.
         AZ::RPI::FeatureProcessorFactory::Get()->RegisterFeatureProcessor<SsaoStencilExclusionFeatureProcessor>();
 
         auto* passSystem = AZ::RPI::PassSystemInterface::Get();
@@ -53,45 +54,12 @@ namespace O3DEProjectPlaygroundCH
             );
             passSystem->ConnectEvent(m_loadTemplatesHandler);
         }
-
-        AZ::TickBus::Handler::BusConnect();
     }
 
     void SsaoStencilExclusionSystemComponent_ClaudeOpus::Deactivate()
     {
-        AZ::TickBus::Handler::BusDisconnect();
         AZ::RPI::FeatureProcessorFactory::Get()->UnregisterFeatureProcessor<SsaoStencilExclusionFeatureProcessor>();
         m_loadTemplatesHandler.Disconnect();
-    }
-
-    void SsaoStencilExclusionSystemComponent_ClaudeOpus::OnTick(
-        [[maybe_unused]] float deltaTime, [[maybe_unused]] AZ::ScriptTimePoint time)
-    {
-        if (m_featureProcessorEnabled)
-        {
-            AZ::TickBus::Handler::BusDisconnect();
-            return;
-        }
-
-        auto* rpiSystem = AZ::RPI::RPISystemInterface::Get();
-        if (!rpiSystem)
-        {
-            return;
-        }
-
-        AZ::RPI::Scene* scene = rpiSystem->GetSceneByName(AZ::Name("Main"));
-        if (!scene)
-        {
-            return;
-        }
-
-        scene->EnableFeatureProcessor<SsaoStencilExclusionFeatureProcessor>();
-        m_featureProcessorEnabled = true;
-
-        AZ_TracePrintf("SsaoStencilExclusion_ClaudeOpus",
-            "SsaoStencilExclusionFeatureProcessor enabled on default scene\n");
-
-        AZ::TickBus::Handler::BusDisconnect();
     }
 
     void SsaoStencilExclusionSystemComponent_ClaudeOpus::LoadPassTemplateMappings()

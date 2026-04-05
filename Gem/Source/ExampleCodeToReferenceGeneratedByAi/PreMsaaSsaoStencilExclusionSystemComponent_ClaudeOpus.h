@@ -2,7 +2,6 @@
 #pragma once
 
 #include <AzCore/Component/Component.h>
-#include <AzCore/Component/TickBus.h>
 #include <AzCore/EBus/Event.h>
 
 namespace O3DEProjectPlaygroundCH
@@ -14,11 +13,13 @@ namespace O3DEProjectPlaygroundCH
     //! This is the cross-platform alternative to SsaoStencilExclusionSystemComponent_ClaudeOpus
     //! which uses stencil-as-texture reads (Vulkan only).
     //!
+    //! Registers the feature processor and loads custom pass templates. The feature processor is
+    //! automatically enabled on all scenes via the factory registry.
+    //!
     //! IMPORTANT: Only one of these system components should be active at a time.
     //! Enable this one for DX12 support, or the other one for simpler Vulkan-only usage.
     class PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus
         : public AZ::Component
-        , public AZ::TickBus::Handler
     {
     public:
         AZ_COMPONENT(PreMsaaSsaoStencilExclusionSystemComponent_ClaudeOpus, "{B2E4C8D1-6A3F-4752-8D19-E5C7A9F01B3E}");
@@ -34,13 +35,9 @@ namespace O3DEProjectPlaygroundCH
         void Activate() override;
         void Deactivate() override;
 
-        // AZ::TickBus::Handler
-        void OnTick(float deltaTime, AZ::ScriptTimePoint time) override;
-
     private:
         void LoadPassTemplateMappings();
 
         AZ::Event<>::Handler m_loadTemplatesHandler;
-        bool m_featureProcessorEnabled = false;
     };
 }

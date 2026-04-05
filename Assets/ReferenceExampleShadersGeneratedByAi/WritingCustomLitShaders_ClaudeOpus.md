@@ -513,20 +513,46 @@ class SsaoStencilExclusionFeatureProcessor : public AZ::RPI::FeatureProcessor
 
 ### Registration and Activation
 
-The FeatureProcessor must be:
+The FeatureProcessor requires two things in the system component:
 
 1. **Reflected** in the system component's `Reflect()` so the factory can create instances.
 2. **Registered** with `FeatureProcessorFactory::Get()->RegisterFeatureProcessor<T>()` in the system component's `Activate()`.
-3. **Enabled on a scene** via `scene->EnableFeatureProcessor<T>()`. This triggers `AddRenderPasses` for existing pipelines. Use `TickBus` to wait for the scene to exist, then enable.
 
-Pass templates are loaded via `PassSystemInterface::LoadPassTemplateMappings()` in an `OnReadyLoadTemplatesEvent` handler, which fires during pass system initialization. The `.azasset` file maps template names to `.pass` files.
+That's it. When any Scene is created, it calls `FeatureProcessorFactory::EnableAllForScene(this)` which automatically creates and activates every registered feature processor on that scene.
+
+Pass templates are loaded via `PassSystemInterface::LoadPassTemplateMappings()` in an `OnReadyLoadTemplatesEvent` handler connected during the system component's `Activate()`. The `.azasset` file maps template names to `.pass` files.
+
+```cpp
+void MySystemComponent::Activate()
+{
+    // Register FP -- Scene will auto-enable it via EnableAllForScene()
+    AZ::RPI::FeatureProcessorFactory::Get()->RegisterFeatureProcessor<MyFeatureProcessor>();
+
+    // Load pass templates when the pass system is ready
+    auto* passSystem = AZ::RPI::PassSystemInterface::Get();
+    if (passSystem)
+    {
+        m_loadTemplatesHandler = AZ::RPI::PassSystemInterface::OnReadyLoadTemplatesEvent::Handler(
+            [this]() { this->LoadPassTemplateMappings(); }
+        );
+        passSystem->ConnectEvent(m_loadTemplatesHandler);
+    }
+}
+
+void MySystemComponent::Deactivate()
+{
+    AZ::RPI::FeatureProcessorFactory::Get()->UnregisterFeatureProcessor<MyFeatureProcessor>();
+    m_loadTemplatesHandler.Disconnect();
+}
+```
 
 ### Timing
 
 | Event | What's available | What to do |
 |---|---|---|
-| `OnReadyLoadTemplatesEvent` | Pass system ready, engine templates may not be loaded yet | Load YOUR pass templates only |
-| `OnTick` (first tick) | Templates loaded, pipeline built | Enable FeatureProcessor on scene |
+| System component `Activate()` | RPI system ready (require `RPISystem` service) | Register FP with factory, connect template load handler |
+| `OnReadyLoadTemplatesEvent` | Pass system ready for template loading | Load YOUR pass templates via `LoadPassTemplateMappings()` |
+| Scene creation (automatic) | Factory calls `EnableAllForScene()` | FP is created and activated -- no action needed |
 | `AddRenderPasses` (from FeatureProcessor) | Pipeline being constructed | Insert passes via `AddPassBefore`/`AddPassAfter` |
 
 `InsertChild` on a live, already-built pipeline does NOT work -- the parent pass's `QueueForBuildAndInitialization` rebuilds from the template and removes dynamically inserted children. `AddRenderPasses` is called during construction, before the first frame, so inserted passes are part of the normal build cycle.
