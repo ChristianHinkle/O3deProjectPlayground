@@ -1,0 +1,38 @@
+// CustomBasePBR: Full-featured PBR material with customizable BRDF hooks.
+// Reuses engine's BasePBR modules for vertex eval, pixel geometry, surface eval.
+// Custom BRDF functions forward to engine defaults — modify them to change shading.
+
+#include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_MaterialInputs.azsli>
+
+#if MATERIALPIPELINE_SHADER_HAS_PIXEL_STAGE
+
+    COMMON_OPTIONS_BASE_COLOR()
+    COMMON_OPTIONS_VERTEX_COLOR()
+    COMMON_OPTIONS_ROUGHNESS()
+    COMMON_OPTIONS_METALLIC()
+    COMMON_OPTIONS_SPECULAR_F0()
+    COMMON_OPTIONS_NORMAL()
+
+    bool NeedsTangentFrame()
+    {
+        return o_normal_useTexture;
+    }
+
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_VertexEval.azsli>
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_PixelGeometryEval.azsli>
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_SurfaceEval.azsli>
+
+    // --- Custom BRDF (overrides GetDiffuseLighting/GetSpecularLighting before BasePBR defines them) ---
+    #include "CustomBasePBR_LightingBrdf.azsli"
+
+    // --- Custom LightUtil overrides (empty stub, ready for per-light-type customization) ---
+    #include "CustomBasePBR_LightUtils.azsli"
+
+    // --- BasePBR lighting evaluation (includes Lights.azsli, uses our BRDF overrides) ---
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_LightingEval.azsli>
+
+#else
+
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/DepthPass_VertexEval.azsli>
+
+#endif

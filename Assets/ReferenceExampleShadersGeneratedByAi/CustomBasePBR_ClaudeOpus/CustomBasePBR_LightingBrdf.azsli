@@ -1,0 +1,39 @@
+// CustomBasePBR BRDF lighting functions.
+// Overrides GetDiffuseLighting/GetSpecularLighting with custom implementations that
+// forward to the engine's BasePBR defaults. Modify these to change how all lights
+// shade surfaces — no need to override individual LightUtil classes.
+//
+// Include this file BEFORE BasePBR_LightingBrdf.azsli (or instead of it).
+
+#pragma once
+
+// Override the diffuse/specular function macros BEFORE BasePBR_LightingBrdf defines them.
+#define GetDiffuseLighting(surface, lightingData, lightIntensity, dirToLight) \
+    GetDiffuseLighting_Custom(surface, lightingData, lightIntensity, dirToLight)
+
+#define GetSpecularLighting(surface, lightingData, lightIntensity, dirToLight, viewIndex) \
+    GetSpecularLighting_Custom(surface, lightingData, lightIntensity, dirToLight, viewIndex)
+
+// Include BasePBR BRDF — defines GetDiffuseLighting_BasePBR/GetSpecularLighting_BasePBR
+// (the aliases are skipped because we already defined them above).
+#include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_LightingBrdf.azsli>
+
+// ---------------------------------------------------------------------------
+// Custom diffuse lighting function.
+// Currently forwards to the engine's BasePBR implementation (DiffuseLambertian).
+// Modify this to change diffuse shading for all light types at once.
+// ---------------------------------------------------------------------------
+real3 GetDiffuseLighting_Custom(Surface surface, LightingData lightingData, real3 lightIntensity, real3 dirToLight)
+{
+    return GetDiffuseLighting_BasePBR(surface, lightingData, lightIntensity, dirToLight);
+}
+
+// ---------------------------------------------------------------------------
+// Custom specular lighting function.
+// Currently forwards to the engine's BasePBR implementation (SpecularGGX).
+// Modify this to change specular shading for all light types at once.
+// ---------------------------------------------------------------------------
+real3 GetSpecularLighting_Custom(Surface surface, LightingData lightingData, const real3 lightIntensity, const real3 dirToLight, uint viewIndex)
+{
+    return GetSpecularLighting_BasePBR(surface, lightingData, lightIntensity, dirToLight, viewIndex);
+}

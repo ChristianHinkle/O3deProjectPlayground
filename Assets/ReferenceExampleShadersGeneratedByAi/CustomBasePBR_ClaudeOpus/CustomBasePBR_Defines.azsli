@@ -1,0 +1,7 @@
+// CustomBasePBR material defines.
+// Reuses engine's BasePBR_Defines.azsli — pulls in vertex color support, UV set count,
+// ObjectSrg, DrawSrg, auto-generated MaterialParameters, and BasePBR data structures.
+
+#pragma once
+
+#include <Atom/Feature/Common/Assets/Materials/Types/BasePBR_Defines.azsli>
