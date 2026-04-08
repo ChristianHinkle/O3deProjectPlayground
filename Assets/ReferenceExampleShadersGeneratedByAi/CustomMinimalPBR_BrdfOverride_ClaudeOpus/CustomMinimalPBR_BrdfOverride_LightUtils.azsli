@@ -1,0 +1,13 @@
+// Custom LightUtil overrides for CustomMinimalPBR_BrdfOverride.
+// Per-light shading uses the engine's default PBR calculations (no overrides).
+//
+// For most customization, modifying GetDiffuseLighting_Custom/GetSpecularLighting_Custom
+// in CustomMinimalPBR_BrdfOverride_LightingBrdf.azsli is simpler and sufficient — it
+// affects all lights without duplicating any attenuation math.
+//
+// To customize per-light shading, add LightUtil class overrides here following the
+// pattern in CustomMinimalPBR_LightUtils.azsli.
+
+#pragma once
+
+// No LightUtil overrides — engine defaults are used.

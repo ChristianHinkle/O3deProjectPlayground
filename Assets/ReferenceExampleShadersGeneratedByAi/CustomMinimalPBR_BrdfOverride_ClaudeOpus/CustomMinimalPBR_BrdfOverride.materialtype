@@ -1,0 +1,61 @@
+{
+    "description": "CustomMinimalPBR_BrdfOverride: Minimal PBR material with BRDF function overrides. Customizes GetDiffuseLighting/GetSpecularLighting without duplicating attenuation math.",
+    "version": 1,
+    "propertyLayout": {
+        "groups": [
+            {
+                "id": "settings",
+                "displayName": "Settings"
+            }
+        ],
+        "properties": {
+            "settings": [
+                {
+                    "id": "baseColor",
+                    "displayName": "Base Color",
+                    "type": "Color",
+                    "defaultValue": [1.0, 1.0, 1.0],
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_baseColor"
+                    }
+                },
+                {
+                    "id": "metallic",
+                    "displayName": "Metallic",
+                    "type": "float",
+                    "defaultValue": 0.0,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_metallic"
+                    }
+                },
+                {
+                    "id": "roughness",
+                    "displayName": "Roughness",
+                    "type": "float",
+                    "defaultValue": 1.0,
+                    "min": 0.0,
+                    "max": 1.0,
+                    "connection": {
+                        "type": "ShaderInput",
+                        "id": "m_roughness"
+                    }
+                }
+            ]
+        }
+    },
+    "shaders": [
+        {
+            "file": "./CustomMinimalPBR_BrdfOverride.shader"
+        },
+        {
+            "file": "Shaders/Shadow/Shadowmap.shader"
+        },
+        {
+            "file": "Shaders/Depth/DepthPass.shader"
+        }
+    ]
+}

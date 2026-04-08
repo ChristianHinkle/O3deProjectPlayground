@@ -1,0 +1,9 @@
+{
+    "materialType": "CustomMinimalPBR_BrdfOverride.materialtype",
+    "materialTypeVersion": 1,
+    "propertyValues": {
+        "settings.baseColor": [1.0, 1.0, 1.0],
+        "settings.metallic": 0.0,
+        "settings.roughness": 1.0
+    }
+}

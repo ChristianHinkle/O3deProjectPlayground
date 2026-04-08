@@ -1,0 +1,47 @@
+// Custom BRDF lighting functions for CustomMinimalPBR_BrdfOverride.
+// Overrides GetDiffuseLighting/GetSpecularLighting via #ifndef macros — the same
+// pattern BasePBR uses. All light types automatically use these functions without
+// needing individual LightUtil class overrides.
+//
+// Modify GetDiffuseLighting_Custom and/or GetSpecularLighting_Custom to change
+// how all lights shade surfaces.
+//
+// PREREQUISITES: Surface, LightingData, LightingUtils, and Brdf must be defined before including this file.
+
+#pragma once
+
+// Override the diffuse/specular function macros.
+// These must be defined BEFORE the light type files are included (via Lights.azsli).
+#define GetDiffuseLighting(surface, lightingData, lightIntensity, dirToLight) \
+    GetDiffuseLighting_Custom(surface, lightingData, lightIntensity, dirToLight)
+
+#define GetSpecularLighting(surface, lightingData, lightIntensity, dirToLight, viewIndex) \
+    GetSpecularLighting_Custom(surface, lightingData, lightIntensity, dirToLight, viewIndex)
+
+// ---------------------------------------------------------------------------
+// Custom diffuse lighting function.
+// Currently identical to the engine's standard PBR diffuse (DiffuseLambertian).
+// Modify this to change diffuse shading for all light types at once.
+// ---------------------------------------------------------------------------
+real3 GetDiffuseLighting_Custom(Surface surface, LightingData lightingData, real3 lightIntensity, real3 dirToLight)
+{
+    real3 diffuse = DiffuseLambertian(surface.albedo, surface.GetDiffuseNormal(), dirToLight, lightingData.diffuseResponse);
+    diffuse *= lightIntensity;
+    return diffuse;
+}
+
+// ---------------------------------------------------------------------------
+// Custom specular lighting function.
+// Currently identical to the engine's standard PBR specular (SpecularGGX).
+// Modify this to change specular shading for all light types at once.
+// ---------------------------------------------------------------------------
+real3 GetSpecularLighting_Custom(Surface surface, LightingData lightingData, const real3 lightIntensity, const real3 dirToLight, uint viewIndex)
+{
+    real3 specular = SpecularGGX(
+        lightingData.dirToCamera[viewIndex], dirToLight,
+        surface.GetSpecularNormal(), surface.GetSpecularF0(),
+        lightingData.GetSpecularNdotV(viewIndex),
+        surface.roughnessA2, lightingData.multiScatterCompensation);
+    specular *= lightIntensity;
+    return specular;
+}

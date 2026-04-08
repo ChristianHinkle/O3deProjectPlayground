@@ -1,0 +1,56 @@
+// Lighting pipeline utilities for CustomMinimalPBR_BrdfOverride.
+// These are copied from StandardLighting.azsli because that file defines
+// GetDiffuseLighting/GetSpecularLighting as plain functions (no #ifndef guards),
+// preventing BRDF overrides. This file provides everything else from
+// StandardLighting.azsli: light iteration, output structs, and convenience wrappers.
+//
+// PREREQUISITES: GetDiffuseLighting/GetSpecularLighting and all light prerequisites
+// must be defined before including this file.
+
+#pragma once
+
+// Light type files (DirectionalLight, PointLight, etc.) — their Apply() methods
+// call GetDiffuseLighting/GetSpecularLighting, which resolve to our custom versions.
+#include <Atom/Features/PBR/Lights/Lights.azsli>
+
+// --- PbrLightingOutput (from StandardLighting.azsli) ---
+
+struct PbrLightingOutput
+{
+    real4 m_diffuseColor;
+    real4 m_specularColor;
+    real4 m_albedo;
+    real4 m_specularF0;
+    real4 m_normal;
+};
+
+PbrLightingOutput GetPbrLightingOutput(Surface surface, LightingData lightingData, real alpha)
+{
+    PbrLightingOutput lightingOutput;
+
+    lightingOutput.m_diffuseColor = real4(lightingData.diffuseLighting, alpha);
+    lightingOutput.m_specularColor = real4(lightingData.specularLighting[0], 1.0);
+
+    lightingOutput.m_specularF0 = real4(surface.GetSpecularF0(), surface.roughnessLinear);
+    lightingOutput.m_albedo.rgb = surface.albedo * lightingData.diffuseResponse * lightingData.diffuseAmbientOcclusion;
+    lightingOutput.m_albedo.a = lightingData.specularOcclusion;
+    lightingOutput.m_normal.rgb = EncodeNormalSignedOctahedron(surface.GetDefaultNormal());
+    lightingOutput.m_normal.a = EncodeUnorm2BitFlags(o_enableIBL, o_specularF0_enableMultiScatterCompensation);
+
+    return lightingOutput;
+}
+
+// --- Forward pass helpers (from StandardLighting.azsli) ---
+
+#include <Atom/Features/Pipeline/Forward/ForwardPassDecals.azsli>
+#include <Atom/Features/Pipeline/Forward/ForwardPassDirectLighting.azsli>
+
+void ApplyDecals(inout LightCullingTileIterator tileIterator, inout Surface surface)
+{
+    ApplyDecals_ForwardPass(tileIterator, surface);
+}
+
+void ApplyDirectLighting(Surface surface, inout LightingData lightingData, float4 screenPosition, inout LightCullingTileIterator tileIterator)
+{
+    ApplyDirectLighting_ForwardPass(surface, lightingData, screenPosition, tileIterator);
+}
