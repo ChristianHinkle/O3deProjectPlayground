@@ -17,7 +17,7 @@
 #include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
 #include <Atom/Features/SrgSemantics.azsli>
 
-// --- Prerequisites: Surface, LightingData, and BRDF must be defined before custom utils ---
+// --- Prerequisites: Surface, LightingData, and BRDF must be defined before custom LightUtils ---
 #include <Atom/Features/PBR/LightingOptions.azsli>
 #include <Atom/Features/PBR/Lighting/LightingData.azsli>
 #include <Atom/Features/PBR/Surfaces/StandardSurface.azsli>
@@ -26,7 +26,7 @@
 #include <Atom/Features/SampleBrdfMap.azsli>
 #include <Atom/Features/GoboTexture.azsli>
 
-// --- Custom LightUtil overrides (uses Surface/LightingData, defines #define macros) ---
+// --- Custom LightUtil overrides (defines #define macros before StandardLighting includes light loops) ---
 #include "CustomDiffuseLightUtils.azsli"
 
 // --- StandardLighting: prereqs skipped via #pragma once, defines GetDiffuse/GetSpecular, includes light loops ---
@@ -37,8 +37,8 @@
 ShaderResourceGroup MaterialSrg : SRG_PerMaterial
 {
     float3 m_baseColor;
-    float m_roughness;
     float m_metallic;
+    float m_roughness;
 }
 
 struct VSInput
@@ -114,7 +114,7 @@ ForwardPassOutput MainPS(VSOutput IN)
     // --- Output ---
     ForwardPassOutput OUT;
     OUT.m_diffuseColor = lightingOutput.m_diffuseColor;
-    OUT.m_diffuseColor.w = -1;
+    OUT.m_diffuseColor.w = -1; // Subsurface scattering disabled
     OUT.m_specularColor = lightingOutput.m_specularColor;
     OUT.m_specularF0 = lightingOutput.m_specularF0;
     OUT.m_albedo = lightingOutput.m_albedo;

@@ -1,0 +1,354 @@
+// Custom LightUtil overrides for CustomMinimalPBR.
+// Each light type's Apply() uses standard PBR diffuse (DiffuseLambertian) and specular (SpecularGGX).
+// This produces results identical to the engine's default PBR lighting.
+//
+// To customize: modify GetCustomDiffuse() and/or GetCustomSpecular() below,
+// or modify individual light type Apply() methods for per-light-type control.
+//
+// PREREQUISITES: Surface, LightingData, LightingUtils, and Brdf must be defined before including this file.
+//
+// Include this file BEFORE including StandardLighting.azsli.
+
+#pragma once
+
+#include <Atom/Features/PBR/Lights/LightStructures.azsli>
+
+// Copied from LightTypesCommon.azsli (can't include it directly due to dependency ordering).
+// Adjusts specular intensity based on light radius and surface roughness to approximate energy conservation.
+real GetCustomIntensityAdjustedByRadiusAndRoughness(real roughnessA, real radius, real distance2)
+{
+    real roughnessAdjusted = saturate(roughnessA + (radius / (3.0 * sqrt(distance2))));
+    real intensityNormalization = max(roughnessA, 0.001) / roughnessAdjusted;
+    return intensityNormalization * intensityNormalization;
+}
+
+// ---------------------------------------------------------------------------
+// Custom diffuse lighting function.
+// Currently identical to the engine's GetDiffuseLighting() (without clear coat).
+// Modify this to change diffuse shading for all light types at once.
+// ---------------------------------------------------------------------------
+real3 GetCustomDiffuse(Surface surface, LightingData lightingData, real3 lightIntensity, real3 dirToLight)
+{
+    real3 diffuse = DiffuseLambertian(surface.albedo, surface.GetDiffuseNormal(), dirToLight, lightingData.diffuseResponse);
+    diffuse *= lightIntensity;
+    return diffuse;
+}
+
+// ---------------------------------------------------------------------------
+// Custom specular lighting function.
+// Currently identical to the engine's GetSpecularLighting() (without clear coat).
+// Modify this to change specular shading for all light types at once.
+// ---------------------------------------------------------------------------
+real3 GetCustomSpecular(Surface surface, LightingData lightingData, real3 lightIntensity, real3 dirToLight, uint viewIndex)
+{
+    real3 specular = SpecularGGX(
+        lightingData.dirToCamera[viewIndex], dirToLight,
+        surface.GetSpecularNormal(), surface.GetSpecularF0(),
+        lightingData.GetSpecularNdotV(viewIndex),
+        surface.roughnessA2, lightingData.multiScatterCompensation);
+    specular *= lightIntensity;
+    return specular;
+}
+
+// === DirectionalLight ===
+#define DirectionalLightUtil DirectionalLightUtil_Custom
+class DirectionalLightUtil_Custom
+{
+    static DirectionalLightUtil_Custom Init(DirectionalLight light, Surface surface)
+    {
+        DirectionalLightUtil_Custom result;
+        return result;
+    }
+
+    void Apply(DirectionalLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real3 dirToLight = normalize(real3(-light.m_direction));
+
+        // Diffuse contribution
+        lightingData.diffuseLighting += GetCustomDiffuse(surface, lightingData, real3(light.m_rgbIntensityLux), dirToLight) * litRatio;
+
+        // Specular contribution for each view
+        [unroll]
+        for (uint viewIndex = 0; viewIndex < GET_SHADING_VIEW_COUNT; ++viewIndex)
+        {
+            // Adjust direction based on angular diameter (matches engine behavior)
+            real3 reflectionDir = reflect(-lightingData.dirToCamera[viewIndex], surface.GetSpecularNormal());
+            real3 lightDirToReflectionDir = reflectionDir - dirToLight;
+            real lightDirToReflectionDirLen = length(lightDirToReflectionDir);
+            lightDirToReflectionDir = lightDirToReflectionDir / lightDirToReflectionDirLen;
+            lightDirToReflectionDirLen = min(real(light.m_angularRadius), lightDirToReflectionDirLen);
+            real3 viewDirToLight = dirToLight + lightDirToReflectionDir * lightDirToReflectionDirLen;
+
+            lightingData.specularLighting[viewIndex] += GetCustomSpecular(surface, lightingData, real3(light.m_rgbIntensityLux), dirToLight, viewIndex) * litRatio;
+        }
+    }
+};
+
+// === SimplePointLight ===
+#define SimplePointLightUtil SimplePointLightUtil_Custom
+class SimplePointLightUtil_Custom
+{
+    real3 m_surfaceToLightDirection;
+    real  m_lightDistanceSquared;
+    real  m_falloff;
+
+    static SimplePointLightUtil_Custom Init(SimplePointLight light, Surface surface)
+    {
+        SimplePointLightUtil_Custom result;
+        real3 posToLight = real3(light.m_position - surface.position);
+        result.m_lightDistanceSquared = dot(posToLight, posToLight);
+        result.m_falloff = result.m_lightDistanceSquared * real(light.m_invAttenuationRadiusSquared);
+        result.m_surfaceToLightDirection = normalize(posToLight);
+        return result;
+    }
+
+    real3 GetSurfaceToLightDirection() { return m_surfaceToLightDirection; }
+    real GetFalloff() { return m_falloff; }
+
+    void Apply(SimplePointLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
+        radiusAttenuation = radiusAttenuation * radiusAttenuation;
+
+        m_lightDistanceSquared = max(0.001 * 0.001, m_lightDistanceSquared);
+        real3 lightIntensity = (real3(light.m_rgbIntensityCandelas) / m_lightDistanceSquared) * radiusAttenuation;
+
+        // Diffuse contribution
+        lightingData.diffuseLighting += GetCustomDiffuse(surface, lightingData, lightIntensity, m_surfaceToLightDirection) * litRatio;
+
+        // Specular contribution
+        [unroll]
+        for (uint viewIndex = 0; viewIndex < GET_SHADING_VIEW_COUNT; ++viewIndex)
+        {
+            lightingData.specularLighting[viewIndex] += GetCustomSpecular(surface, lightingData, lightIntensity, m_surfaceToLightDirection, viewIndex) * litRatio;
+        }
+    }
+};
+
+// === SimpleSpotLight ===
+#define SimpleSpotLightUtil SimpleSpotLightUtil_Custom
+class SimpleSpotLightUtil_Custom
+{
+    real3 m_surfaceToLightDirection;
+    real  m_lightDistanceSquared;
+    real  m_dotWithDirection;
+    real  m_falloff;
+    real3 m_lightIntensity;
+
+    static SimpleSpotLightUtil_Custom Init(SimpleSpotLight light, Surface surface)
+    {
+        SimpleSpotLightUtil_Custom result;
+        real3 posToLight = real3(light.m_position - surface.position);
+        result.m_surfaceToLightDirection = normalize(posToLight);
+        result.m_lightDistanceSquared = dot(posToLight, posToLight);
+        result.m_falloff = result.m_lightDistanceSquared * real(light.m_invAttenuationRadiusSquared);
+        result.m_dotWithDirection = dot(result.m_surfaceToLightDirection, -real3(light.m_direction));
+
+        if (result.m_dotWithDirection < real(light.m_cosOuterConeAngle))
+        {
+            result.m_falloff = 1.0f;
+        }
+        return result;
+    }
+
+    real3 GetSurfaceToLightDirection() { return m_surfaceToLightDirection; }
+    real GetFalloff() { return m_falloff; }
+
+    void Apply(SimpleSpotLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
+        radiusAttenuation = radiusAttenuation * radiusAttenuation;
+
+        m_lightDistanceSquared = max(0.001 * 0.001, m_lightDistanceSquared);
+        m_lightIntensity = (real3(light.m_rgbIntensityCandelas) / m_lightDistanceSquared) * radiusAttenuation;
+
+        // Gobo texture
+        #if PIPELINE_HAS_PASS_SRG
+        m_lightIntensity *= SampleGoboTexture(light.m_goboTexIndex, PassSrg::LinearSampler, light.m_viewProjectionMatrix, surface.position);
+        #endif
+
+        real cosInnerConeAngle = real(light.m_cosInnerConeAngle);
+        if (m_dotWithDirection < cosInnerConeAngle)
+        {
+            real penumbraMask = (m_dotWithDirection - real(light.m_cosOuterConeAngle)) / (cosInnerConeAngle - real(light.m_cosOuterConeAngle));
+            penumbraMask = penumbraMask * penumbraMask * (3.0 - 2.0 * penumbraMask);
+            m_lightIntensity *= penumbraMask;
+        }
+
+        // Diffuse contribution
+        lightingData.diffuseLighting += GetCustomDiffuse(surface, lightingData, m_lightIntensity, m_surfaceToLightDirection) * litRatio;
+
+        // Specular contribution
+        [unroll]
+        for (uint viewIndex = 0; viewIndex < GET_SHADING_VIEW_COUNT; ++viewIndex)
+        {
+            lightingData.specularLighting[viewIndex] += GetCustomSpecular(surface, lightingData, m_lightIntensity, m_surfaceToLightDirection, viewIndex) * litRatio;
+        }
+    }
+};
+
+// === PointLight (Sphere area light) ===
+#define PointLightUtil PointLightUtil_Custom
+class PointLightUtil_Custom
+{
+    real3 m_surfaceToLight;
+    real3 m_surfaceToLightDirection;
+    real  m_lightDistanceSquared;
+    real  m_falloff;
+    real3 m_lightIntensity;
+
+    static PointLightUtil_Custom Init(PointLight light, Surface surface)
+    {
+        PointLightUtil_Custom result;
+        result.m_surfaceToLight = real3(light.m_position) - real3(surface.position);
+        result.m_surfaceToLightDirection = normalize(result.m_surfaceToLight);
+        result.m_lightDistanceSquared = dot(result.m_surfaceToLight, result.m_surfaceToLight);
+        result.m_falloff = result.m_lightDistanceSquared * real(light.m_invAttenuationRadiusSquared);
+        return result;
+    }
+
+    real3 GetSurfaceToLightDirection() { return m_surfaceToLightDirection; }
+    real GetFalloff() { return m_falloff; }
+
+    void Apply(PointLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        real radiusAttenuation = 1.0 - (m_falloff * m_falloff);
+        radiusAttenuation = radiusAttenuation * radiusAttenuation;
+
+        m_lightDistanceSquared = max(0.001 * 0.001, m_lightDistanceSquared);
+        m_lightIntensity = (real3(light.m_rgbIntensityCandelas) / m_lightDistanceSquared) * radiusAttenuation;
+
+        // Diffuse contribution
+        lightingData.diffuseLighting += GetCustomDiffuse(surface, lightingData, m_lightIntensity, m_surfaceToLightDirection) * litRatio;
+
+        // Specular contribution (with bulb radius adjustment)
+        [unroll]
+        for (uint viewIndex = 0; viewIndex < GET_SHADING_VIEW_COUNT; ++viewIndex)
+        {
+            real3 reflectionDir = reflect(-lightingData.dirToCamera[viewIndex], surface.GetSpecularNormal());
+            real3 reflectionPosToLight = m_surfaceToLight - dot(m_surfaceToLight, reflectionDir) * reflectionDir;
+            real3 surfaceToLightAdjusted = m_surfaceToLight - (reflectionPosToLight * saturate(real(light.m_bulbRadius) / length(reflectionPosToLight)));
+            real sphereIntensityNormalization = GetCustomIntensityAdjustedByRadiusAndRoughness(surface.roughnessA, real(light.m_bulbRadius), m_lightDistanceSquared);
+
+            lightingData.specularLighting[viewIndex] += sphereIntensityNormalization * GetCustomSpecular(surface, lightingData, m_lightIntensity, normalize(surfaceToLightAdjusted), viewIndex) * litRatio;
+        }
+    }
+
+    void ApplySampled(PointLight light, Surface surface, inout LightingData lightingData, const uint sampleCount = 512)
+    {
+        Apply(light, surface, 1.0, lightingData);
+    }
+};
+
+// === DiskLight (SpotDisk area light) ===
+#define DiskLightUtil DiskLightUtil_Custom
+class DiskLightUtil_Custom
+{
+    real3 m_posToLight;
+    real3 m_posToLightDir;
+    real  m_lightDistanceSquared;
+    real  m_falloff;
+    real  m_angleFalloff;
+    real3 m_dirToConeTip;
+    real  m_dotWithDirection;
+
+    static DiskLightUtil_Custom Init(DiskLight light, Surface surface)
+    {
+        DiskLightUtil_Custom result;
+        result.m_posToLight = light.m_position - surface.position;
+        result.m_lightDistanceSquared = dot(result.m_posToLight, result.m_posToLight);
+        result.m_falloff = result.m_lightDistanceSquared * light.m_invAttenuationRadiusSquared;
+        result.m_posToLightDir = normalize(result.m_posToLight);
+        result.m_angleFalloff = dot(result.m_posToLightDir, -light.m_direction);
+
+        float3 coneTipPosition = light.m_position + light.m_bulbPositionOffset * -light.m_direction;
+        result.m_dirToConeTip = normalize(coneTipPosition - surface.position);
+        result.m_dotWithDirection = dot(result.m_dirToConeTip, -normalize(light.m_direction));
+
+        if (result.m_falloff < 1.0f && result.m_angleFalloff > 0.0f)
+        {
+            bool useConeAngle = light.m_flags & DiskLightFlag::UseConeAngle;
+            if (useConeAngle)
+            {
+                if (result.m_dotWithDirection < light.m_cosOuterConeAngle)
+                {
+                    result.m_angleFalloff = 0.0f;
+                }
+            }
+        }
+        return result;
+    }
+
+    real3 GetSurfaceToLightDirection() { return m_posToLightDir; }
+    real3 GetDirectionToConeTip() { return m_dirToConeTip; }
+    real GetFalloff() { return select(m_angleFalloff > 0.0f, m_falloff, 1.0f); }
+
+    void Apply(DiskLight light, Surface surface, real litRatio, inout LightingData lightingData)
+    {
+        float radiusAttenuation = 1.0 - (m_falloff * m_falloff);
+        radiusAttenuation = radiusAttenuation * radiusAttenuation;
+
+        // Disk-to-point projection for light direction
+        float distanceToPlane = dot(m_posToLight, -light.m_direction);
+        float distanceToPlane2 = distanceToPlane * distanceToPlane;
+        float pointOnPlaneToLightDistance = sqrt(m_lightDistanceSquared - distanceToPlane2);
+        float pointOnPlaneToDiskDistance = max(pointOnPlaneToLightDistance - light.m_diskRadius, 0.0f);
+        float distanceToDisk2 = pointOnPlaneToDiskDistance * pointOnPlaneToDiskDistance + distanceToPlane2;
+
+        float3 pointOnPlane = -light.m_direction * distanceToPlane;
+        float3 pointOnPlaneToLightDir = normalize(m_posToLight - pointOnPlane);
+        float3 nearSideDir = normalize(pointOnPlane + pointOnPlaneToLightDir * (pointOnPlaneToLightDistance - light.m_diskRadius));
+        float3 farSideDir = normalize(pointOnPlane + pointOnPlaneToLightDir * (pointOnPlaneToLightDistance + light.m_diskRadius));
+        m_posToLightDir = normalize((nearSideDir + farSideDir) * 0.5);
+
+        m_lightDistanceSquared = max(0.001 * 0.001, m_lightDistanceSquared);
+        float3 lightIntensity = (light.m_rgbIntensityCandelas / m_lightDistanceSquared) * radiusAttenuation * m_angleFalloff;
+        lightIntensity /= ((light.m_diskRadius / distanceToPlane) + 1.0);
+
+        bool useConeAngle = light.m_flags & DiskLightFlag::UseConeAngle;
+        if (useConeAngle && m_dotWithDirection < light.m_cosInnerConeAngle)
+        {
+            float penumbraMask = (m_dotWithDirection - light.m_cosOuterConeAngle) / (light.m_cosInnerConeAngle - light.m_cosOuterConeAngle);
+            penumbraMask = penumbraMask * penumbraMask * (3.0 - 2.0 * penumbraMask);
+            lightIntensity *= penumbraMask;
+        }
+
+        // Diffuse contribution
+        lightingData.diffuseLighting += GetCustomDiffuse(surface, lightingData, lightIntensity, m_posToLightDir) * litRatio;
+
+        // Specular contribution (with disk projection)
+        [unroll]
+        for (uint viewIndex = 0; viewIndex < GET_SHADING_VIEW_COUNT; ++viewIndex)
+        {
+            float3 reflectionDir = reflect(-lightingData.dirToCamera[viewIndex], surface.GetSpecularNormal());
+            float reflectionDotLight = dot(reflectionDir, -light.m_direction);
+
+            float3 posToIntersection;
+            if (reflectionDotLight >= 0.0001)
+            {
+                posToIntersection = reflectionDir * distanceToPlane / reflectionDotLight;
+            }
+            else
+            {
+                float3 posToFarOffPoint = reflectionDir * distanceToPlane * 10000.0;
+                float3 lightToFarOffPoint = posToFarOffPoint - m_posToLight;
+                float3 intersectionToFarOffPoint = dot(lightToFarOffPoint, light.m_direction) * light.m_direction;
+                posToIntersection = posToFarOffPoint - intersectionToFarOffPoint;
+            }
+
+            float3 intersectionToLight = m_posToLight - posToIntersection;
+            float3 viewPosToLight = m_posToLight - intersectionToLight * saturate(light.m_diskRadius / length(intersectionToLight));
+            float diskIntensityNormalization = GetCustomIntensityAdjustedByRadiusAndRoughness(surface.roughnessA, light.m_diskRadius, m_lightDistanceSquared);
+
+            lightingData.specularLighting[viewIndex] += diskIntensityNormalization * GetCustomSpecular(surface, lightingData, lightIntensity, normalize(viewPosToLight), viewIndex) * litRatio;
+        }
+    }
+
+    void ApplySampled(DiskLight light, Surface surface, inout LightingData lightingData, const uint sampleCount = 512)
+    {
+        Apply(light, surface, 1.0, lightingData);
+    }
+};
+
+// CapsuleLight, QuadLight, PolygonLight are NOT overridden.
+// They fall back to their PBR defaults automatically.

@@ -1,15 +1,10 @@
 #pragma once
 
-// LightUtil Override: Use the engine's lighting pipeline with custom LightUtil overrides.
-// Each light type's Apply() is overridden to use CelShadeDiffuse() instead of the
-// engine's DiffuseLambertian(). The engine handles light iteration, culling, attenuation
-// init, shadows, and IBL. We only replace the per-light shading math.
-//
-// Key advantage over Approach A: new light types (capsule, quad, polygon, future types)
-// fall back to PBR defaults instead of being invisible.
-//
-// Key advantage over Pipeline Post-Process: per-light control. Each light individually gets
-// cel-shaded rather than post-processing the aggregate result.
+// CustomMinimalPBR: A minimal PBR shader with custom LightUtil overrides.
+// Produces results identical to the engine's MinimalPBR material.
+// Intended as a starting point for custom shading — modify GetCustomDiffuse()
+// and/or GetCustomSpecular() in CustomMinimalPBR_LightUtils.azsli to change
+// how lights shade surfaces.
 
 #define FORCE_IBL_IN_FORWARD_PASS 1
 #define FORCE_OPAQUE 1
@@ -21,7 +16,6 @@
 #include <Atom/Features/InstancedTransforms.azsli>
 #include <Atom/Features/Pipeline/Forward/ForwardPassSrg.azsli>
 #include <Atom/Features/Pipeline/Forward/ForwardPassOutput.azsli>
-#include <Atom/Features/PostProcessing/PostProcessUtil.azsli>
 #include <Atom/Features/SrgSemantics.azsli>
 
 // --- Prerequisites: Surface, LightingData, and BRDF must be defined before custom LightUtils ---
@@ -34,7 +28,9 @@
 #include <Atom/Features/GoboTexture.azsli>
 
 // --- Custom LightUtil overrides (defines #define macros before StandardLighting includes light loops) ---
-#include "CelShadeLightUtils.azsli"
+// To customize per-light shading, edit the GetCustomDiffuse/GetCustomSpecular functions
+// or individual light type Apply() methods in this file.
+#include "CustomMinimalPBR_LightUtils.azsli"
 
 // --- StandardLighting: prereqs skipped via #pragma once, defines GetDiffuse/GetSpecular, includes light loops ---
 #include <Atom/Features/PBR/Lighting/StandardLighting.azsli>
@@ -43,13 +39,9 @@
 
 ShaderResourceGroup MaterialSrg : SRG_PerMaterial
 {
-    float3 m_litColor;
-    float3 m_unlitColor;
     float3 m_baseColor;
     float m_metallic;
     float m_roughness;
-    float m_diffuseThreshold;
-    float m_specularThreshold;
 }
 
 struct VSInput
@@ -90,7 +82,7 @@ ForwardPassOutput MainPS(VSOutput IN)
     float3 normalWS, tangentWS, bitangentWS;
     ConstructTBN(real3(IN.m_normal), real4(IN.m_tangent), objectToWorld, objectToWorldIT, normalWS, tangentWS, bitangentWS);
 
-    // --- Surface (white albedo so CelShadeDiffuse returns pure light contribution) ---
+    // --- Surface ---
     Surface surface;
     surface.position = IN.m_worldPosition.xyz;
     surface.normal = normalWS;
@@ -111,47 +103,24 @@ ForwardPassOutput MainPS(VSOutput IN)
 
     LightingData lightingData;
     lightingData.Init(surface.position, surface.normal, surface.roughnessLinear, views);
-    // Keep PBR energy conservation: Fresnel splits energy between diffuse and specular.
-    // Both sides will be quantized into bands, so the smooth Fresnel gradient becomes a hard edge.
     lightingData.specularResponse = FresnelSchlickWithRoughness(lightingData.GetSpecularNdotV(), surface.specularF0, surface.roughnessLinear);
     lightingData.diffuseResponse = 1.0f - lightingData.specularResponse;
 
-    // --- Lighting (each light uses CelShadeDiffuse via our custom LightUtils for diffuse, ---
-    // --- and the engine's standard GetSpecularLighting for specular)                      ---
+    // --- Lighting ---
     ApplyDecals(tileIterator, surface);
     ApplyDirectLighting(surface, lightingData, IN.m_position, tileIterator);
-    // ApplyIblForward adds both diffuse IBL (ambient from environment, including reflection
-    // probe blending) and specular IBL (Fresnel-based reflections) to lightingData.
     ApplyIblForward(surface, lightingData);
     lightingData.FinalizeLighting();
-
-    // Quantize diffuse into cel-shading bands.
-    // The diffuse result includes per-light cel-shaded contributions (from our custom LightUtils)
-    // plus diffuse IBL (from ApplyIblForward).
-    float diffuseLuminance = GetLuminance(lightingData.diffuseLighting);
-    float diffuseBand = step(MaterialSrg::m_diffuseThreshold, diffuseLuminance);
-    float3 celDiffuse = lerp(MaterialSrg::m_unlitColor, MaterialSrg::m_litColor, diffuseBand);
-
-    // Quantize specular into cel-shading bands.
-    // specularLighting[0] is the combined result of per-light highlights + IBL reflections.
-    // Stepping it quantizes all specular sources together.
-    float specLuminance = GetLuminance(lightingData.specularLighting[0]);
-    float specBand = step(MaterialSrg::m_specularThreshold, specLuminance);
-    float3 celSpecular = specBand * MaterialSrg::m_litColor;
 
     // --- Output ---
     PbrLightingOutput lightingOutput = GetPbrLightingOutput(surface, lightingData, 1.0);
 
     ForwardPassOutput OUT;
-    OUT.m_diffuseColor = float4(celDiffuse, -1);
-    OUT.m_specularColor = float4(celSpecular, 1.0);
-    // Zero specularF0 so the reflection pipeline (ReflectionGlobalFullscreen, ReflectionComposite)
-    // produces no reflections for our pixels. Roughness = 1.0 in alpha.
-    OUT.m_specularF0 = float4(0.0, 0.0, 0.0, 1.0);
+    OUT.m_diffuseColor = lightingOutput.m_diffuseColor;
+    OUT.m_diffuseColor.w = -1; // Subsurface scattering disabled
+    OUT.m_specularColor = lightingOutput.m_specularColor;
+    OUT.m_specularF0 = lightingOutput.m_specularF0;
     OUT.m_albedo = lightingOutput.m_albedo;
-    // Zero normal signals "no IBL, no reflections" to the reflection pipeline.
-    // Using lightingOutput.m_normal would encode o_enableIBL=true in the alpha,
-    // causing the reflection passes to add unwanted specular IBL on top of our cel result.
-    OUT.m_normal = float4(0.0, 0.0, 0.0, 0.0);
+    OUT.m_normal = lightingOutput.m_normal;
     return OUT;
 }

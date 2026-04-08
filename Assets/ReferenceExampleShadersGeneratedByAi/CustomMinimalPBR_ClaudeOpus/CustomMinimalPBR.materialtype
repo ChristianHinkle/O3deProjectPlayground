@@ -1,5 +1,5 @@
 {
-    "description": "LightUtil Override: Simple diffuse using LightUtil overrides. Custom diffuse function applied per-light via the engine's pipeline.",
+    "description": "CustomMinimalPBR: Minimal PBR material with custom LightUtil overrides. Starting point for custom shading.",
     "version": 1,
     "propertyLayout": {
         "groups": [
@@ -49,13 +49,13 @@
     },
     "shaders": [
         {
-            "file": "./FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse.shader"
-        },
-        {
-            "file": "Assets/Shaders/ExampleCodeToReferenceGeneratedByAi/Depth_ClaudeOpus/StencilExcludeDepthPass_ClaudeOpus.shader"
+            "file": "./CustomMinimalPBR.shader"
         },
         {
             "file": "Shaders/Shadow/Shadowmap.shader"
+        },
+        {
+            "file": "Shaders/Depth/DepthPass.shader"
         }
     ]
 }
