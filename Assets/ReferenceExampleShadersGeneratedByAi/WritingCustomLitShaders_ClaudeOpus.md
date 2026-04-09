@@ -757,17 +757,17 @@ The geometry pass outputs surface properties (albedo, normal, roughness, metalli
 
 ### Comparison Table
 
-| | Custom Light Loops | Full Pipeline | Full Pipeline + Custom Lighting | Deferred (reference) |
-|---|---|---|---|---|
-| Per-light artistic control | Full | None | Per-overridden type | None |
-| Per-material shading model | Yes | Partial (output only) | Yes | No |
-| Supports all light types automatically | No (manual) | Yes | Unoverridden types fall back to PBR | Yes |
-| Future-proof for new light types | No | Yes | New types get PBR default | Yes |
-| Shadow support | Manual | Automatic | Automatic | Automatic |
-| Code duplication with engine | High | None | Moderate (attenuation math + 1 function) | N/A |
-| Maintenance burden | High | Low | Moderate | Low |
-| NPR suitability | Excellent | Good | Excellent | Poor |
-| Starting point | — | CelShaded / SimpleDiffuse | CustomMinimalPBR_LightUtilOverride | — |
+| | Custom Light Loops | Full Pipeline | BRDF Override | LightUtil Override | Deferred (reference) |
+|---|---|---|---|---|---|
+| Per-light artistic control | Full | None | All lights (same BRDF) | Per-overridden type | None |
+| Per-material shading model | Yes | Partial (output only) | Yes | Yes | No |
+| Supports all light types | No (manual) | Yes | Yes | Unoverridden fall back | Yes |
+| Future-proof | No | Yes | Yes | New types get PBR default | Yes |
+| Shadow support | Manual | Automatic | Automatic | Automatic | Automatic |
+| Duplicated engine code | High | None | ~35 lines (MinimalPBR only) | ~350 lines (attenuation math) | N/A |
+| Maintenance burden | High | Low | Low | Moderate | Low |
+| NPR suitability | Excellent | Good | Excellent | Excellent | Poor |
+| Starting point | — | CelShaded / SimpleDiffuse | BrdfOverride / CustomBasePBR | LightUtilOverride | — |
 
 ### Do You Need Manual Light Loops?
 
@@ -808,7 +808,7 @@ Effects where this per-light decision genuinely changes the visual result:
 
 These are real differences, but they're subtle and increasingly niche. In typical scenes with one dominant directional light plus ambient, post-process and per-light override produce nearly identical results.
 
-**Practical recommendation:** Start with Full Pipeline alone (aggregate output stylization with no LightUtil overrides). It covers the vast majority of NPR effects with minimal code and full engine support (shadows, all light types, future-proof). If you later notice specific multi-light situations where shadow boundaries look wrong or lights are filling in shadows you want to keep, copy `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli` into your shader and modify the per-light functions. The cel-shaded shader (`FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`) demonstrates the aggregate-only approach, while `CustomMinimalPBR_LightUtilOverride_ClaudeOpus` demonstrates the per-light override structure ready for customization.
+**Practical recommendation:** Start with **Full Pipeline** (aggregate output stylization) — it covers the vast majority of NPR effects with zero custom lighting code. If you need to change the diffuse or specular shading model itself (not just post-process the result), use a **BRDF Override** (`CustomMinimalPBR_BrdfOverride_ClaudeOpus` or `CustomBasePBR_ClaudeOpus`). Only use **LightUtil Overrides** (`CustomMinimalPBR_LightUtilOverride_ClaudeOpus`) if you need different shading math per light type. **Manual Light Loops** are useful for learning but offer no capability the other approaches don't provide.
 
 ### Why This Matters for O3DE Specifically
 
@@ -818,63 +818,119 @@ Full Pipeline is a valid middle ground, but it does reduce the forward+ advantag
 
 Full Pipeline with Custom Lighting is the strongest middle ground: you get per-light artistic control for the types you override, automatic PBR fallback for types you don't, and you stay within the engine's pipeline for shadows, culling, and future features. The tradeoff is implementation complexity (include-order dependencies, interface contracts).
 
-The sweet spot depends on how much per-light control your art direction actually needs. For most NPR work, start with **Full Pipeline** -- it's the simplest, most future-proof, and covers the vast majority of effects. Add **Custom Lighting** overrides for specific light types only if you see multi-light shadow boundary issues. **Custom Light Loops** are useful for learning but offer no artistic capability that Custom Lighting doesn't also provide, while missing shadows and future compatibility.
+The sweet spot depends on how much control your art direction needs. For most NPR work, start with **Full Pipeline** (simplest, most future-proof). If you need a custom shading model, use **BRDF Override** — it changes diffuse/specular for all lights with zero duplicated engine code. Add **LightUtil Overrides** only if you need per-light-type control. **Custom Light Loops** are useful for learning but offer no capability the other approaches don't provide.
 
-### Full Pipeline with Custom Lighting (directories: `CustomMinimalPBR_LightUtilOverride_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse_ClaudeOpus`)
+### Full Pipeline with Custom Lighting
 
-**`CustomMinimalPBR_LightUtilOverride_ClaudeOpus`** is the reference implementation and recommended starting point. It produces standard PBR results with LightUtil overrides that match the engine's default implementations exactly. To create a custom shading model, copy this shader and modify the `GetCustomDiffuse()` and/or `GetCustomSpecular()` functions in `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli`, or modify individual light type `Apply()` methods for per-light-type control.
+Two techniques for overriding the engine's lighting calculations, in order of preference:
 
-The CelShaded and SimpleDiffuse variants don't override LightUtils at all — they use the engine's default PBR per-light calculations and apply all stylization at the aggregate output stage in the pixel shader.
+#### BRDF Override (Recommended)
 
-The engine provides a designed customization point that sits between Custom Light Loops and Full Pipeline. Every light type's utility class is wrapped in a `#ifndef` guard:
+**Directories:** `CustomMinimalPBR_BrdfOverride_ClaudeOpus` (MinimalPBR), `CustomBasePBR_ClaudeOpus` (BasePBR)
 
-```hlsl
-// In SimplePointLight.azsli:
-#ifndef SimplePointLightUtil
-#define SimplePointLightUtil SimplePointLightUtil_PBR
-#endif
-```
-
-You `#define` your own class name before the engine includes run, and the engine uses yours instead of the PBR default. The engine provides `LightUtilTemplate.azsli` as a starting point.
-
-With this approach you can:
-- Override the `Apply()` method for specific light types with your own shading math
-- Only customize the final diffuse/specular calculation
-- Leave light types you don't override on their PBR defaults
-
-New light types added by the engine fall back to PBR defaults until you write a custom util for them.
-
-#### How Cast Shadows Work with LightUtil Overrides
-
-A common concern: "if I'm overriding the lighting math, do I lose cast shadows?" No. Shadows are computed by the engine *before* your `Apply()` is called.
-
-The engine's forward pass light functions (e.g., `ForwardPassDirectionalLights.azsli`, `ForwardPassPointLights.azsli`) sample shadow maps, compute visibility, and pass the result as the `litRatio` parameter to your `Apply()`:
+The engine's `GetDiffuseLighting` and `GetSpecularLighting` functions use `#ifndef` guards — you can replace them with custom implementations via `#define` macros. Every light type's `Apply()` method calls these functions, so overriding them changes all lights at once with zero duplicated attenuation math.
 
 ```hlsl
-// Inside the engine's ForwardPassDirectionalLights.azsli:
-litRatio = DirectionalLightShadow::GetVisibility(shadowIndex, surface.position, surface.vertexNormal, screenUv);
+// Define macros BEFORE the engine's BRDF file is included:
+#define GetDiffuseLighting(surface, lightingData, lightIntensity, dirToLight) \
+    GetDiffuseLighting_Custom(surface, lightingData, lightIntensity, dirToLight)
 
-// Then the engine calls YOUR overridden Apply():
-light.Apply(srgLight, surface, currentLitRatio, lightingData);
+#define GetSpecularLighting(surface, lightingData, lightIntensity, dirToLight, viewIndex) \
+    GetSpecularLighting_Custom(surface, lightingData, lightIntensity, dirToLight, viewIndex)
+
+// Then define your custom implementations:
+real3 GetDiffuseLighting_Custom(Surface surface, LightingData lightingData, real3 lightIntensity, real3 dirToLight)
+{
+    // Standard PBR diffuse — modify this to change shading for all lights
+    real3 diffuse = DiffuseLambertian(surface.albedo, surface.GetDiffuseNormal(), dirToLight, lightingData.diffuseResponse);
+    diffuse *= lightIntensity;
+    return diffuse;
+}
 ```
 
-Your custom `Apply()` receives `litRatio` (0.0 = fully shadowed, 1.0 = fully lit) and simply multiplies by it:
+**For BasePBR materials** (`CustomBasePBR_ClaudeOpus`): The engine's `BasePBR_LightingBrdf.azsli` already has `#ifndef` guards. Define your macros before including it, and it skips its defaults while still defining the `_BasePBR` implementations you can forward to:
 
 ```hlsl
-lightingData.diffuseLighting += GetCustomDiffuse(surface, lightingData, lightIntensity, dirToLight) * litRatio;
+// In CustomBasePBR_LightingBrdf.azsli:
+#define GetDiffuseLighting(...) GetDiffuseLighting_Custom(...)
+#include <.../BasePBR/BasePBR_LightingBrdf.azsli>  // defines _BasePBR versions
+
+real3 GetDiffuseLighting_Custom(Surface surface, LightingData lightingData, real3 lightIntensity, real3 dirToLight)
+{
+    return GetDiffuseLighting_BasePBR(surface, lightingData, lightIntensity, dirToLight);  // forward to engine
+}
 ```
 
-You never sample a shadow map, set up cascades, or compute visibility. The engine handles all of that. Your override only controls *how the light affects the surface* -- the infrastructure around it (shadow sampling, light culling, iteration) stays intact.
+**For MinimalPBR materials** (`CustomMinimalPBR_BrdfOverride_ClaudeOpus`): `StandardLighting.azsli` does NOT have `#ifndef` guards on these functions, so you can't include it. Instead, include its pieces separately:
 
-This is also why mixing manual light loops with the engine pipeline would double-count lights. `ApplyDirectLighting()` already iterates over all light types and calls your overridden `Apply()`. If you also manually looped over `ViewSrg::m_pointLights`, those lights would be applied twice -- once by the engine (with shadows, culling, and your override) and once by your manual loop (without any of that).
+1. Prerequisites (Surface, LightingData, Brdf) — same includes
+2. Your custom BRDF file (defines the macros + custom functions)
+3. `Lights.azsli` directly (light type files that call your functions)
+4. A small pipeline utilities file (~35 lines copied from StandardLighting.azsli: `PbrLightingOutput`, `GetPbrLightingOutput`, `ApplyDecals`/`ApplyDirectLighting` wrappers, and includes for `ForwardPassDecals.azsli`/`ForwardPassDirectLighting.azsli`)
 
-The `Apply()` method is a precise insertion point: the engine has already found the light, culled it, and computed its shadow. Your code only decides what to do with that information. That's why the LightUtil Override gets shadows, culling, and every other pipeline feature for free -- it's not replacing the pipeline, it's plugging into it.
+Also requires `#define ENABLE_TRANSMISSION 0` before the prerequisites (normally set by `StandardLighting.azsli`).
 
-Cast shadows and cel-shading compose naturally because they're both just multipliers on the same diffuse accumulator. A shadowed pixel has low `litRatio`, which reduces the diffuse contribution, which reduces the luminance, which the post-process quantization pushes into the "unlit" band. No special integration needed.
+See `CustomMinimalPBR_BrdfOverride_LightingPipeline.azsli` for the pipeline utilities file.
+
+**Include order for MinimalPBR BRDF Override** (critical — order matters):
+
+```hlsl
+#define ENABLE_TRANSMISSION 0
+#define FORCE_IBL_IN_FORWARD_PASS 1
+#define FORCE_OPAQUE 1
+
+// Standard SRG includes
+#include <scenesrg_all.srgi>
+#include <viewsrg_all.srgi>
+#include <Atom/Features/PBR/DefaultObjectSrg.azsli>
+// ... other SRG/transform/output includes
+
+// Step 1: Prerequisites (Surface, LightingData, BRDF math)
+#include <Atom/Features/PBR/LightingOptions.azsli>
+#include <Atom/Features/PBR/Lighting/LightingData.azsli>
+#include <Atom/Features/PBR/Surfaces/StandardSurface.azsli>
+#include <Atom/Features/PBR/LightingUtils.azsli>
+#include <Atom/Features/PBR/Microfacet/Brdf.azsli>
+#include <Atom/Features/SampleBrdfMap.azsli>
+#include <Atom/Features/GoboTexture.azsli>
+
+// Step 2: Custom BRDF (#defines + custom GetDiffuseLighting/GetSpecularLighting)
+#include "YourCustom_LightingBrdf.azsli"
+
+// Step 3: Custom LightUtil overrides (empty stub, or per-light-type overrides)
+#include "YourCustom_LightUtils.azsli"
+
+// Step 4: Lighting pipeline (Lights.azsli + PbrLightingOutput + ApplyDecals/ApplyDirectLighting)
+#include "YourCustom_LightingPipeline.azsli"
+
+// Step 5: IBL
+#include <Atom/Features/PBR/Lights/IblForward.azsli>
+```
+
+Steps 1's prerequisites use `#pragma once`, so they won't conflict with anything included later. Step 2 defines the `#define` macros before Step 4 includes `Lights.azsli` (which contains the light type files that call `GetDiffuseLighting`/`GetSpecularLighting`).
+
+**Include order for BasePBR BRDF Override** is simpler — it follows the engine's `BasePBR.azsli` structure. Replace `BasePBR_LightingBrdf.azsli` with your custom version (which includes BasePBR's internally), and insert a LightUtils stub before `BasePBR_LightingEval.azsli`. See `CustomBasePBR.azsli` for the complete include chain.
+
+**Specular details:**
+
+`specularF0Factor` must be non-zero. `Surface::SetAlbedoAndSpecularF0(albedo, specularF0Factor, metallic)` computes `specularF0` from the factor. With `specularF0Factor = 0`, Fresnel is zero at all angles and no specular is produced by any light (direct or IBL). Use `specularF0Factor = 0.5` for standard dielectric reflectance (~4% at normal incidence).
+
+Per-light specular accumulates in `lightingData.specularLighting[0]` alongside IBL specular from `ApplyIblForward`. Quantizing it once in the pixel shader output steps all specular sources together — no separate handling per source needed:
+
+```hlsl
+float specLuminance = GetLuminance(lightingData.specularLighting[0]);
+float specBand = step(specularThreshold, specLuminance);
+```
+
+**`@gemroot:` paths for BasePBR materialtypes:** Custom `.materialtype` files that `$import` engine property groups (BaseColorPropertyGroup.json, etc.) must use absolute gem paths because `$import` resolves relative to the file location:
+
+```json
+{ "$import": "@gemroot:Atom_Feature_Common@/Assets/Materials/Types/MaterialInputs/BaseColorPropertyGroup.json" }
+```
 
 #### Aggregate Output Stylization (Recommended for NPR)
 
-For NPR styles like cel-shading, let the engine compute standard PBR lighting (all light types, shadows, IBL), then stylize the aggregate result at the output stage. This is what `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus` does — no LightUtil overrides, just aggregate banding:
+For NPR styles like cel-shading, let the engine compute standard PBR lighting (all light types, shadows, IBL), then stylize the aggregate result at the output stage. This is what `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus` does — no BRDF or LightUtil overrides, just aggregate banding:
 
 ```hlsl
 // After the engine pipeline runs (all lights accumulated via standard PBR):
@@ -887,15 +943,31 @@ float specBand = step(MaterialSrg::m_specularThreshold, specLuminance);
 float3 celSpecular = specBand * MaterialSrg::m_litColor;
 ```
 
-This approach works for the vast majority of NPR effects because most are functions of total light intensity, not per-light decisions. All light types (including capsule, quad, polygon, and any future types) are handled automatically — no PBR can leak through because the quantization step processes everything.
+This works for the vast majority of NPR effects because most are functions of total light intensity, not per-light decisions. All light types are handled automatically.
 
-LightUtil overrides are only needed when you want per-light artistic control that differs from the aggregate result (see "Do You Need Per-Light Overrides" above). `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli` provides the ready-to-modify overrides for that case.
+#### How Cast Shadows Work
 
-#### Include Order (Critical)
+Shadows are computed by the engine *before* any custom lighting code runs. The engine samples shadow maps, computes visibility, and passes `litRatio` (0.0 = fully shadowed, 1.0 = fully lit) into each light's `Apply()`. Your BRDF functions receive light intensity that's already been shadow-attenuated via `litRatio`. No shadow map sampling or cascade setup needed.
 
-The engine's `StandardLighting.azsli` is a monolith that includes prerequisites, defines `GetDiffuseLighting`/`GetSpecularLighting`, and then includes the light type files. Your custom util `#define` macros must be set before the light type files are included, but your custom classes need `Surface` and `LightingData` to be defined first.
+This also means mixing manual light loops with the engine pipeline would double-count lights — `ApplyDirectLighting()` already iterates all lights with shadows and culling.
 
-The solution is to manually include `StandardLighting.azsli`'s prerequisites before your custom utils:
+#### LightUtil Override (Advanced — Per-Light-Type Control)
+
+**Directory:** `CustomMinimalPBR_LightUtilOverride_ClaudeOpus`
+
+Use this only when BRDF overrides aren't enough — when you need different shading math for different light types (e.g., directional lights use smooth gradients while point lights use hard bands), or when you need to modify per-light attenuation curves.
+
+Each light type's utility class is wrapped in a `#ifndef` guard:
+
+```hlsl
+#ifndef SimplePointLightUtil
+#define SimplePointLightUtil SimplePointLightUtil_PBR
+#endif
+```
+
+You `#define` your own class before the engine includes run. Your class must be self-contained — you can't compose with the `_PBR` base class because including the base light files triggers a circular dependency (`LightTypesCommon.azsli` → `BackLighting.azsli` → `GetDiffuseLighting`, which isn't defined yet).
+
+**Include order for LightUtil overrides** (uses `StandardLighting.azsli`):
 
 ```hlsl
 // Step 1: Prerequisites (Surface, LightingData, BRDF)
@@ -908,85 +980,19 @@ The solution is to manually include `StandardLighting.azsli`'s prerequisites bef
 #include <Atom/Features/GoboTexture.azsli>
 
 // Step 2: Your custom LightUtil overrides (#defines + class definitions)
-#include "CelShadeLightUtils.azsli"
+#include "YourCustom_LightUtils.azsli"
 
 // Step 3: StandardLighting.azsli (prereqs skipped via #pragma once)
 #include <Atom/Features/PBR/Lighting/StandardLighting.azsli>
 ```
 
-`StandardLighting.azsli` uses `#pragma once` on all its sub-includes, so the prerequisites from Step 1 won't be double-included. When it reaches `Lights.azsli`, each light file checks `#ifndef SimplePointLightUtil` (etc.), finds your `#define` already set, skips the default, and uses your class.
+`StandardLighting.azsli` uses `#pragma once` on its sub-includes, so Step 1's prerequisites won't be double-included. When it reaches `Lights.azsli`, each light file checks `#ifndef SimplePointLightUtil` (etc.), finds your `#define` already set, and uses your class.
 
-#### Custom Util Classes Must Be Self-Contained
-
-You might expect to wrap the base `_PBR` class via composition (as the `LightUtilTemplate.azsli` suggests). In practice this doesn't work because including the base light file (e.g., `SimplePointLight.azsli`) transitively includes `LightTypesCommon.azsli` → `BackLighting.azsli`, which calls `GetDiffuseLighting` -- a function that isn't defined until `StandardLighting.azsli` runs later. This creates a circular dependency.
-
-The working approach is to make your custom classes self-contained: include only `LightStructures.azsli` for the struct definitions, and implement your own `Init()` and `Apply()` with the same attenuation math. This duplicates some code from the base `_PBR` classes, but avoids the dependency cycle.
-
-**`GetIntensityAdjustedByRadiusAndRoughness` must be duplicated.** The engine defines this function in `LightTypesCommon.azsli`, which can't be included due to the same dependency cycle. PointLight and DiskLight `Apply()` methods need it for bulb radius / disk radius specular energy normalization. Copy the function into your LightUtils file with a different name (e.g., `GetCustomIntensityAdjustedByRadiusAndRoughness`) to avoid an ODR (One Definition Rule) violation when `LightTypesCommon.azsli` is included later by `StandardLighting.azsli`:
-
-```hlsl
-real GetCustomIntensityAdjustedByRadiusAndRoughness(real roughnessA, real radius, real distance2)
-{
-    real roughnessAdjusted = saturate(roughnessA + (radius / (3.0 * sqrt(distance2))));
-    real intensityNormalization = max(roughnessA, 0.001) / roughnessAdjusted;
-    return intensityNormalization * intensityNormalization;
-}
-```
-
-See `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli` for the complete working implementation.
-
-#### Adding Specular to Custom LightUtil Classes
-
-Custom LightUtil `Apply()` methods only compute what you put in them. The base PBR `Apply()` calls both `GetDiffuseLighting` and `GetSpecularLighting`, but your override replaces the entire method.
-
-To add specular, define a helper function that calls `SpecularGGX` from `Brdf.azsli`. The function should take a `viewIndex` parameter and return the specular value, with the per-view loop in each `Apply()` method:
-
-```hlsl
-real3 GetCustomSpecular(Surface surface, LightingData lightingData, real3 lightIntensity, real3 dirToLight, uint viewIndex)
-{
-    real3 specular = SpecularGGX(
-        lightingData.dirToCamera[viewIndex], dirToLight,
-        surface.GetSpecularNormal(), surface.GetSpecularF0(),
-        lightingData.GetSpecularNdotV(viewIndex),
-        surface.roughnessA2, lightingData.multiScatterCompensation);
-    specular *= lightIntensity;
-    return specular;
-}
-```
-
-Then in each `Apply()`:
-
-```hlsl
-[unroll]
-for (uint viewIndex = 0; viewIndex < GET_SHADING_VIEW_COUNT; ++viewIndex)
-{
-    lightingData.specularLighting[viewIndex] += GetCustomSpecular(surface, lightingData, lightIntensity, dirToLight, viewIndex) * litRatio;
-}
-```
-
-This pattern keeps the per-view loop visible in every `Apply()` method and naturally handles area lights (PointLight, DiskLight) that need a per-view adjusted light direction for specular.
-
-You cannot call `GetSpecularLighting()` from `StandardLighting.azsli` because your custom utils are included BEFORE `StandardLighting.azsli` (they must be, for the `#define` macros to take effect). `SpecularGGX` from `Brdf.azsli` is available because it's in the prerequisites included before your utils.
-
-**`specularF0Factor` must be non-zero:** The `Surface::SetAlbedoAndSpecularF0(albedo, specularF0Factor, metallic)` function computes `specularF0` from the factor. With `specularF0Factor = 0`, the Fresnel response is zero at all angles and no specular is produced by any light source (direct or IBL). Use `specularF0Factor = 0.5` for standard dielectric reflectance (~4% at normal incidence). This is the same value PBR materials use.
-
-The per-light specular accumulates in `lightingData.specularLighting[0]` alongside IBL specular from `ApplyIblForward`. Quantizing it once in the pixel shader output steps all specular sources together.
-
-#### Specular in Manual Light Loop Shaders
-
-The Manual Light Loop approach doesn't have access to the engine's `SpecularGGX` or `GetSpecularLighting`. Use Blinn-Phong instead -- it's self-contained and produces similar hard-edged highlights when stepped:
-
-```hlsl
-float3 halfVec = normalize(dirToLight + dirToCamera);
-float NdotH = saturate(dot(normal, halfVec));
-specularAmount += pow(NdotH, shininess) * intensity;
-```
-
-Map PBR roughness to Blinn-Phong shininess: `shininess ≈ 2 / (roughness^4) - 2`. At roughness 1.0, shininess ≈ 0 (no visible highlight). At roughness 0.2, shininess ≈ 1248 (tight highlight). Accumulate `specularAmount` per light, then step it alongside diffuse.
-
-#### Required Interface Methods
-
-The engine's forward pass code calls methods on your util classes beyond just `Init()` and `Apply()`. If you miss any, the shader compiler will fail. The required interface per light type:
+**Key constraints:**
+- Custom classes must be self-contained. You can't compose with the `_PBR` base class because including the base light files triggers a circular dependency (`LightTypesCommon.azsli` → `BackLighting.azsli` → `GetDiffuseLighting`, which isn't defined yet).
+- Include only `LightStructures.azsli` for struct definitions. Duplicate attenuation math from the `_PBR` classes.
+- `GetIntensityAdjustedByRadiusAndRoughness` must be copied with a different name (e.g., `GetCustomIntensityAdjustedByRadiusAndRoughness`) to avoid ODR violations.
+- Each class needs specific interface methods beyond `Init()`/`Apply()` — see `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli` for the complete implementation with all required methods per light type.
 
 | Light Type | Required Methods |
 |---|---|
@@ -996,7 +1002,17 @@ The engine's forward pass code calls methods on your util classes beyond just `I
 | PointLight (Sphere) | `Init()`, `Apply()`, `ApplySampled()`, `GetSurfaceToLightDirection()`, `GetFalloff()` |
 | DiskLight (SpotDisk) | `Init()`, `Apply()`, `ApplySampled()`, `GetSurfaceToLightDirection()`, `GetDirectionToConeTip()`, `GetFalloff()` |
 
-`ApplySampled()` is called when `o_area_light_validation` is enabled (a debug/quality mode). A stub that delegates to `Apply()` is sufficient. `GetDirectionToConeTip()` is used by DiskLight's shadow evaluation code.
+#### Specular in Manual Light Loop Shaders
+
+The Manual Light Loop approach doesn't have access to the engine's `SpecularGGX` or `GetSpecularLighting`. Use Blinn-Phong instead:
+
+```hlsl
+float3 halfVec = normalize(dirToLight + dirToCamera);
+float NdotH = saturate(dot(normal, halfVec));
+specularAmount += pow(NdotH, shininess) * intensity;
+```
+
+Map PBR roughness to Blinn-Phong shininess: `shininess ≈ 2 / (roughness^4) - 2`.
 
 #### Light Types in the Editor
 
