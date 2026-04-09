@@ -767,7 +767,7 @@ The geometry pass outputs surface properties (albedo, normal, roughness, metalli
 | Code duplication with engine | High | None | Moderate (attenuation math + 1 function) | N/A |
 | Maintenance burden | High | Low | Moderate | Low |
 | NPR suitability | Excellent | Good | Excellent | Poor |
-| Starting point | — | CelShaded / SimpleDiffuse | CustomMinimalPBR | — |
+| Starting point | — | CelShaded / SimpleDiffuse | CustomMinimalPBR_LightUtilOverride | — |
 
 ### Do You Need Manual Light Loops?
 
@@ -808,7 +808,7 @@ Effects where this per-light decision genuinely changes the visual result:
 
 These are real differences, but they're subtle and increasingly niche. In typical scenes with one dominant directional light plus ambient, post-process and per-light override produce nearly identical results.
 
-**Practical recommendation:** Start with Full Pipeline alone (aggregate output stylization with no LightUtil overrides). It covers the vast majority of NPR effects with minimal code and full engine support (shadows, all light types, future-proof). If you later notice specific multi-light situations where shadow boundaries look wrong or lights are filling in shadows you want to keep, copy `CustomMinimalPBR_LightUtils.azsli` into your shader and modify the per-light functions. The cel-shaded shader (`FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`) demonstrates the aggregate-only approach, while `CustomMinimalPBR_ClaudeOpus` demonstrates the per-light override structure ready for customization.
+**Practical recommendation:** Start with Full Pipeline alone (aggregate output stylization with no LightUtil overrides). It covers the vast majority of NPR effects with minimal code and full engine support (shadows, all light types, future-proof). If you later notice specific multi-light situations where shadow boundaries look wrong or lights are filling in shadows you want to keep, copy `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli` into your shader and modify the per-light functions. The cel-shaded shader (`FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`) demonstrates the aggregate-only approach, while `CustomMinimalPBR_LightUtilOverride_ClaudeOpus` demonstrates the per-light override structure ready for customization.
 
 ### Why This Matters for O3DE Specifically
 
@@ -820,9 +820,9 @@ Full Pipeline with Custom Lighting is the strongest middle ground: you get per-l
 
 The sweet spot depends on how much per-light control your art direction actually needs. For most NPR work, start with **Full Pipeline** -- it's the simplest, most future-proof, and covers the vast majority of effects. Add **Custom Lighting** overrides for specific light types only if you see multi-light shadow boundary issues. **Custom Light Loops** are useful for learning but offer no artistic capability that Custom Lighting doesn't also provide, while missing shadows and future compatibility.
 
-### Full Pipeline with Custom Lighting (directories: `CustomMinimalPBR_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse_ClaudeOpus`)
+### Full Pipeline with Custom Lighting (directories: `CustomMinimalPBR_LightUtilOverride_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus`, `FullPipeline_CustomLighting_MinimalPBR_SimpleDiffuse_ClaudeOpus`)
 
-**`CustomMinimalPBR_ClaudeOpus`** is the reference implementation and recommended starting point. It produces standard PBR results with LightUtil overrides that match the engine's default implementations exactly. To create a custom shading model, copy this shader and modify the `GetCustomDiffuse()` and/or `GetCustomSpecular()` functions in `CustomMinimalPBR_LightUtils.azsli`, or modify individual light type `Apply()` methods for per-light-type control.
+**`CustomMinimalPBR_LightUtilOverride_ClaudeOpus`** is the reference implementation and recommended starting point. It produces standard PBR results with LightUtil overrides that match the engine's default implementations exactly. To create a custom shading model, copy this shader and modify the `GetCustomDiffuse()` and/or `GetCustomSpecular()` functions in `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli`, or modify individual light type `Apply()` methods for per-light-type control.
 
 The CelShaded and SimpleDiffuse variants don't override LightUtils at all — they use the engine's default PBR per-light calculations and apply all stylization at the aggregate output stage in the pixel shader.
 
@@ -889,7 +889,7 @@ float3 celSpecular = specBand * MaterialSrg::m_litColor;
 
 This approach works for the vast majority of NPR effects because most are functions of total light intensity, not per-light decisions. All light types (including capsule, quad, polygon, and any future types) are handled automatically — no PBR can leak through because the quantization step processes everything.
 
-LightUtil overrides are only needed when you want per-light artistic control that differs from the aggregate result (see "Do You Need Per-Light Overrides" above). `CustomMinimalPBR_LightUtils.azsli` provides the ready-to-modify overrides for that case.
+LightUtil overrides are only needed when you want per-light artistic control that differs from the aggregate result (see "Do You Need Per-Light Overrides" above). `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli` provides the ready-to-modify overrides for that case.
 
 #### Include Order (Critical)
 
@@ -933,7 +933,7 @@ real GetCustomIntensityAdjustedByRadiusAndRoughness(real roughnessA, real radius
 }
 ```
 
-See `CustomMinimalPBR_LightUtils.azsli` for the complete working implementation.
+See `CustomMinimalPBR_LightUtilOverride_LightUtils.azsli` for the complete working implementation.
 
 #### Adding Specular to Custom LightUtil Classes
 

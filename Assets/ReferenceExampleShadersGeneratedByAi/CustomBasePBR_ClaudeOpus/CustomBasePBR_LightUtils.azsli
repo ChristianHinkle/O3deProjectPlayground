@@ -2,7 +2,7 @@
 // Per-light shading uses the engine's default PBR calculations (no overrides).
 //
 // To customize per-light shading, add LightUtil class overrides here following the
-// pattern in CustomMinimalPBR_LightUtils.azsli. Define #define macros for each light
+// pattern in CustomMinimalPBR_LightUtilOverride_LightUtils.azsli. Define #define macros for each light
 // type before BasePBR_LightingEval.azsli includes Lights.azsli.
 //
 // Note: For most customization, modifying GetDiffuseLighting_Custom/GetSpecularLighting_Custom

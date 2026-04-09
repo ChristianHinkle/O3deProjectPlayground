@@ -1,5 +1,5 @@
 {
-    "description": "CustomMinimalPBR: Minimal PBR material with custom LightUtil overrides. Starting point for custom shading.",
+    "description": "CustomMinimalPBR_LightUtilOverride: Minimal PBR material with custom LightUtil overrides. Starting point for custom shading.",
     "version": 1,
     "propertyLayout": {
         "groups": [
@@ -49,7 +49,7 @@
     },
     "shaders": [
         {
-            "file": "./CustomMinimalPBR.shader"
+            "file": "./CustomMinimalPBR_LightUtilOverride.shader"
         },
         {
             "file": "Shaders/Shadow/Shadowmap.shader"

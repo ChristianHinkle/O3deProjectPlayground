@@ -2,7 +2,7 @@
 // Per-light shading uses the engine's default PBR calculations (no overrides).
 //
 // To customize per-light shading, add LightUtil class overrides here following the
-// pattern in CustomMinimalPBR_LightUtils.azsli. Define #define macros for each light
+// pattern in CustomMinimalPBR_LightUtilOverride_LightUtils.azsli. Define #define macros for each light
 // type before StandardLighting.azsli is included.
 //
 // PREREQUISITES: Surface, LightingData, LightingUtils, and Brdf must be defined before including this file.
@@ -12,5 +12,5 @@
 #pragma once
 
 // No LightUtil overrides — engine defaults are used.
-// See CustomMinimalPBR_ClaudeOpus/CustomMinimalPBR_LightUtils.azsli for an example
+// See CustomMinimalPBR_ClaudeOpus/CustomMinimalPBR_LightUtilOverride_LightUtils.azsli for an example
 // of how to add per-light overrides here.

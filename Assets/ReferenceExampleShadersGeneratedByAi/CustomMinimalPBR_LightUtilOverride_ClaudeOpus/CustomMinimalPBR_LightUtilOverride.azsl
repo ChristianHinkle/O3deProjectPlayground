@@ -1,9 +1,9 @@
 #pragma once
 
-// CustomMinimalPBR: A minimal PBR shader with custom LightUtil overrides.
+// CustomMinimalPBR_LightUtilOverride: A minimal PBR shader with custom LightUtil overrides.
 // Produces results identical to the engine's MinimalPBR material.
 // Intended as a starting point for custom shading — modify GetCustomDiffuse()
-// and/or GetCustomSpecular() in CustomMinimalPBR_LightUtils.azsli to change
+// and/or GetCustomSpecular() in CustomMinimalPBR_LightUtilOverride_LightUtils.azsli to change
 // how lights shade surfaces.
 
 #define FORCE_IBL_IN_FORWARD_PASS 1
@@ -30,7 +30,7 @@
 // --- Custom LightUtil overrides (defines #define macros before StandardLighting includes light loops) ---
 // To customize per-light shading, edit the GetCustomDiffuse/GetCustomSpecular functions
 // or individual light type Apply() methods in this file.
-#include "CustomMinimalPBR_LightUtils.azsli"
+#include "CustomMinimalPBR_LightUtilOverride_LightUtils.azsli"
 
 // --- StandardLighting: prereqs skipped via #pragma once, defines GetDiffuse/GetSpecular, includes light loops ---
 #include <Atom/Features/PBR/Lighting/StandardLighting.azsli>

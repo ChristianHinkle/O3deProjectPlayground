@@ -1,4 +1,4 @@
-// Custom LightUtil overrides for CustomMinimalPBR.
+// Custom LightUtil overrides for CustomMinimalPBR_LightUtilOverride.
 // Each light type's Apply() uses standard PBR diffuse (DiffuseLambertian) and specular (SpecularGGX).
 // This produces results identical to the engine's default PBR lighting.
 //

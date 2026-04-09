@@ -1,5 +1,5 @@
 {
-    "Source": "CustomMinimalPBR.azsl",
+    "Source": "CustomMinimalPBR_LightUtilOverride.azsl",
     "DepthStencilState": {
         "Depth": {
             "Enable": true,

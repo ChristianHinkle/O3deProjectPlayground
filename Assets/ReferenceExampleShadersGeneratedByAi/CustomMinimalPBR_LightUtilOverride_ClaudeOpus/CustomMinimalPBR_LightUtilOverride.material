@@ -1,5 +1,5 @@
 {
-    "materialType": "CustomMinimalPBR.materialtype",
+    "materialType": "CustomMinimalPBR_LightUtilOverride.materialtype",
     "materialTypeVersion": 1,
     "propertyValues": {
         "settings.baseColor": [1.0, 1.0, 1.0],
