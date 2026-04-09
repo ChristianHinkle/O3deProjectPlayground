@@ -1,0 +1,38 @@
+// CustomStandardPBR lighting evaluation overrides.
+// Overrides InitializeLightingData and FinalizeLightingData via #ifndef macros,
+// forwarding to StandardPBR defaults (which extend BasePBR with emissive, AO,
+// specular occlusion, and ClearCoat diffuse response).
+//
+// Include this file INSTEAD OF StandardPBR_LightingEval.azsli.
+
+#pragma once
+
+// Override the lighting init/finalize macros BEFORE StandardPBR_LightingEval defines them.
+#define InitializeLightingData InitializeLightingData_Custom
+#define FinalizeLightingData FinalizeLightingData_Custom
+
+// Include StandardPBR LightingEval — defines InitializeLightingData_StandardPBR,
+// FinalizeLightingData_StandardPBR, and includes Lights.azsli (via BasePBR_LightingEval).
+#include <Atom/Feature/Common/Assets/Shaders/Materials/StandardPBR/StandardPBR_LightingEval.azsli>
+
+// ---------------------------------------------------------------------------
+// Custom lighting initialization.
+// Currently forwards to the engine's StandardPBR implementation (BasePBR init
+// + emissive, AO, specular occlusion, ClearCoat diffuse response).
+// Modify this to change how lighting data is set up before lights are applied.
+// ---------------------------------------------------------------------------
+void InitializeLightingData_Custom(Surface surface, float3 viewPositions[MAX_SHADING_VIEWS], inout LightingData lightingData)
+{
+    InitializeLightingData_StandardPBR(surface, viewPositions, lightingData);
+}
+
+// ---------------------------------------------------------------------------
+// Custom lighting finalization.
+// Currently forwards to the engine's StandardPBR implementation (BasePBR finalize).
+// Modify this to post-process the aggregate lighting result — e.g., quantize
+// diffuse/specular into cel-shading bands, apply color ramps, etc.
+// ---------------------------------------------------------------------------
+void FinalizeLightingData_Custom(Surface surface, inout LightingData lightingData)
+{
+    FinalizeLightingData_StandardPBR(surface, lightingData);
+}

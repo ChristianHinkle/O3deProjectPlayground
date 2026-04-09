@@ -767,7 +767,7 @@ The geometry pass outputs surface properties (albedo, normal, roughness, metalli
 | Duplicated engine code | High | None | ~35 lines (MinimalPBR only) | ~350 lines (attenuation math) | N/A |
 | Maintenance burden | High | Low | Low | Moderate | Low |
 | NPR suitability | Excellent | Good | Excellent | Excellent | Poor |
-| Starting point | — | CelShaded / SimpleDiffuse | BrdfOverride / CustomBasePBR | LightUtilOverride | — |
+| Starting point | — | CelShaded / SimpleDiffuse | BrdfOverride / CustomBasePBR / CustomStandardPBR | LightUtilOverride | — |
 
 ### Do You Need Manual Light Loops?
 
@@ -826,7 +826,7 @@ Two techniques for overriding the engine's lighting calculations, in order of pr
 
 #### BRDF Override (Recommended)
 
-**Directories:** `CustomMinimalPBR_BrdfOverride_ClaudeOpus` (MinimalPBR), `CustomBasePBR_ClaudeOpus` (BasePBR)
+**Directories:** `CustomMinimalPBR_BrdfOverride_ClaudeOpus` (MinimalPBR), `CustomBasePBR_ClaudeOpus` (BasePBR), `CustomStandardPBR_ClaudeOpus` (StandardPBR)
 
 The engine's `GetDiffuseLighting` and `GetSpecularLighting` functions use `#ifndef` guards — you can replace them with custom implementations via `#define` macros. Every light type's `Apply()` method calls these functions, so overriding them changes all lights at once with zero duplicated attenuation math.
 
@@ -848,10 +848,10 @@ real3 GetDiffuseLighting_Custom(Surface surface, LightingData lightingData, real
 }
 ```
 
-**For BasePBR materials** (`CustomBasePBR_ClaudeOpus`): The engine's `BasePBR_LightingBrdf.azsli` already has `#ifndef` guards. Define your macros before including it, and it skips its defaults while still defining the `_BasePBR` implementations you can forward to:
+**For BasePBR and StandardPBR materials** (`CustomBasePBR_ClaudeOpus`, `CustomStandardPBR_ClaudeOpus`): The engine's `BasePBR_LightingBrdf.azsli` and `StandardPBR_LightingBrdf.azsli` already have `#ifndef` guards. Define your macros before including them, and they skip their defaults while still defining the `_BasePBR` / `_StandardPBR` implementations you can forward to:
 
 ```hlsl
-// In CustomBasePBR_LightingBrdf.azsli:
+// In CustomBasePBR_LightingBrdf.azsli (or CustomStandardPBR_LightingBrdf.azsli):
 #define GetDiffuseLighting(...) GetDiffuseLighting_Custom(...)
 #include <.../BasePBR/BasePBR_LightingBrdf.azsli>  // defines _BasePBR versions
 
@@ -860,6 +860,8 @@ real3 GetDiffuseLighting_Custom(Surface surface, LightingData lightingData, real
     return GetDiffuseLighting_BasePBR(surface, lightingData, lightIntensity, dirToLight);  // forward to engine
 }
 ```
+
+StandardPBR forwards to `_StandardPBR` instead of `_BasePBR` — the StandardPBR versions add ClearCoat Fresnel attenuation on diffuse and ClearCoat specular on top of the base GGX.
 
 **For MinimalPBR materials** (`CustomMinimalPBR_BrdfOverride_ClaudeOpus`): `StandardLighting.azsli` does NOT have `#ifndef` guards on these functions, so you can't include it. Instead, include its pieces separately:
 
@@ -909,7 +911,9 @@ See `CustomMinimalPBR_BrdfOverride_LightingPipeline.azsli` for the pipeline util
 
 Steps 1's prerequisites use `#pragma once`, so they won't conflict with anything included later. Step 2 defines the `#define` macros before Step 4 includes `Lights.azsli` (which contains the light type files that call `GetDiffuseLighting`/`GetSpecularLighting`).
 
-**Include order for BasePBR BRDF Override** is simpler — it follows the engine's `BasePBR.azsli` structure. Replace `BasePBR_LightingBrdf.azsli` with your custom version (which includes BasePBR's internally), and insert a LightUtils stub before `BasePBR_LightingEval.azsli`. See `CustomBasePBR.azsli` for the complete include chain.
+**Include order for BasePBR / StandardPBR BRDF Override** is simpler — it follows the engine's `.azsli` structure. Replace the engine's `_LightingBrdf.azsli` with your custom version (which includes the engine's internally), replace `_LightingEval.azsli` with your custom version (for `InitializeLightingData`/`FinalizeLightingData` overrides), and insert a LightUtils stub between them. See `CustomBasePBR.azsli` or `CustomStandardPBR.azsli` for the complete include chains.
+
+StandardPBR uses `lightingModel: "Standard"` (not "StandardPBR") and has 15 property groups (BasePBR's 10 plus Occlusion, Emissive, ClearCoat, Parallax, Opacity). It also requires `GetDepth()` and `ShouldHandleParallax()` callback functions for the parallax mapping system — see `CustomStandardPBR.azsli` for the exact definitions including the geometric pixel stage.
 
 **Specular details:**
 
@@ -928,7 +932,7 @@ float specBand = step(specularThreshold, specLuminance);
 { "$import": "@gemroot:Atom_Feature_Common@/Assets/Materials/Types/MaterialInputs/BaseColorPropertyGroup.json" }
 ```
 
-**`InitializeLightingData` / `FinalizeLightingData` overrides (BasePBR only):** These functions also use `#ifndef` guards in `BasePBR_LightingEval.azsli`. Override them to customize lighting setup (Fresnel response, multiscatter compensation) or to post-process the aggregate lighting result. `FinalizeLightingData` runs after all lights are accumulated and before the framework assembles the output — making it the natural place for aggregate stylization in BasePBR materials (the equivalent of modifying the pixel shader output in MinimalPBR). See `CustomBasePBR_LightingEval.azsli` for the forwarding setup.
+**`InitializeLightingData` / `FinalizeLightingData` overrides (BasePBR and StandardPBR):** These functions also use `#ifndef` guards in `BasePBR_LightingEval.azsli` and `StandardPBR_LightingEval.azsli`. Override them to customize lighting setup (Fresnel response, multiscatter compensation) or to post-process the aggregate lighting result. `FinalizeLightingData` runs after all lights are accumulated and before the framework assembles the output — making it the natural place for aggregate stylization in BasePBR/StandardPBR materials (the equivalent of modifying the pixel shader output in MinimalPBR). See `CustomBasePBR_LightingEval.azsli` or `CustomStandardPBR_LightingEval.azsli` for the forwarding setup.
 
 #### Aggregate Output Stylization (Recommended for NPR)
 

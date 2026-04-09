@@ -1,0 +1,8 @@
+// CustomStandardPBR material defines.
+// Reuses engine's StandardPBR_Defines.azsli — pulls in vertex color support, UV set count,
+// ObjectSrg, DrawSrg, auto-generated MaterialParameters, and StandardPBR data structures
+// (PixelGeometryData, SurfaceData with clear coat/emissive/occlusion/opacity, LightingData).
+
+#pragma once
+
+#include <Atom/Feature/Common/Assets/Materials/Types/StandardPBR_Defines.azsli>

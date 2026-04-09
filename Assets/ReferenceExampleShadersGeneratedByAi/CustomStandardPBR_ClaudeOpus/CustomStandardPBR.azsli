@@ -1,0 +1,84 @@
+// CustomStandardPBR: Full-featured StandardPBR material with customizable BRDF and lighting hooks.
+// Reuses engine's StandardPBR modules for vertex eval, pixel geometry, surface eval.
+// Adds clear coat, parallax, emissive, occlusion, and opacity on top of BasePBR.
+// Custom BRDF and lighting eval functions forward to engine defaults — modify them to change shading.
+
+#include <Atom/Feature/Common/Assets/Shaders/Materials/StandardPBR/StandardPBR_MaterialInputs.azsli>
+
+#if MATERIALPIPELINE_SHADER_HAS_PIXEL_STAGE
+
+    COMMON_OPTIONS_BASE_COLOR()
+    COMMON_OPTIONS_VERTEX_COLOR()
+    COMMON_OPTIONS_ROUGHNESS()
+    COMMON_OPTIONS_METALLIC()
+    COMMON_OPTIONS_SPECULAR_F0()
+    COMMON_OPTIONS_NORMAL()
+    COMMON_OPTIONS_CLEAR_COAT()
+    COMMON_OPTIONS_OCCLUSION()
+    COMMON_OPTIONS_EMISSIVE()
+    COMMON_OPTIONS_PARALLAX()
+
+    bool ShouldHandleParallax()
+    {
+        return !o_enableSubsurfaceScattering && o_parallax_feature_enabled && o_useHeightmap;
+    }
+
+    bool NeedsTangentFrame()
+    {
+        return ShouldHandleParallax() || o_normal_useTexture || (o_clearCoat_enabled && o_clearCoat_normal_useTexture);
+    }
+
+    // Callback function for ParallaxMapping.azsli
+    DepthResult GetDepth(const MaterialParameters params, Texture2D heightmap, sampler mapSampler, float2 uv, float2 uv_ddx, float2 uv_ddy)
+    {
+        return SampleDepthFromHeightmap(heightmap, mapSampler, uv, uv_ddx, uv_ddy);
+    }
+
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_VertexEval.azsli>
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/StandardPBR/StandardPBR_PixelGeometryEval.azsli>
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/StandardPBR/StandardPBR_SurfaceEval.azsli>
+
+    // --- Custom BRDF (overrides GetDiffuseLighting/GetSpecularLighting before StandardPBR defines them) ---
+    #include "CustomStandardPBR_LightingBrdf.azsli"
+
+    // --- Custom LightUtil overrides (empty stub, ready for per-light-type customization) ---
+    #include "CustomStandardPBR_LightUtils.azsli"
+
+    // --- Custom lighting evaluation (overrides InitializeLightingData/FinalizeLightingData) ---
+    #include "CustomStandardPBR_LightingEval.azsli"
+
+#elif MATERIALPIPELINE_SHADER_HAS_GEOMETRIC_PIXEL_STAGE
+
+    COMMON_OPTIONS_PARALLAX()
+
+    bool ShouldHandleParallax()
+    {
+        bool canHandleParallax = !o_enableSubsurfaceScattering && o_parallax_feature_enabled && o_useHeightmap;
+        return canHandleParallax && (o_parallax_enablePixelDepthOffset || o_opacity_mode == OpacityMode::Cutout);
+    }
+
+    bool NeedsTangentFrame()
+    {
+        return ShouldHandleParallax();
+    }
+
+    // Callback function for ParallaxMapping.azsli
+    DepthResult GetDepth(const MaterialParameters params, Texture2D heightmap, sampler mapSampler, float2 uv, float2 uv_ddx, float2 uv_ddy)
+    {
+        return SampleDepthFromHeightmap(heightmap, mapSampler, uv, uv_ddx, uv_ddy);
+    }
+
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_VertexEval.azsli>
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/StandardPBR/StandardPBR_PixelGeometryEval.azsli>
+    #include "Atom/Feature/Common/Assets/Shaders/Materials/MaterialFunctions/StandardGetAlphaAndClip.azsli"
+
+    void EvaluateSurface(VsOutput IN, VsSystemValues SV, PixelGeometryData geoData, const MaterialParameters params)
+    {
+        GetAlphaAndClip(params, geoData.uvs);
+    }
+
+#else
+
+    #include <Atom/Feature/Common/Assets/Shaders/Materials/DepthPass_VertexEval.azsli>
+
+#endif
