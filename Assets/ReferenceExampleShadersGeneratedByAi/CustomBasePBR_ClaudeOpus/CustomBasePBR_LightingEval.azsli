@@ -1,0 +1,38 @@
+// CustomBasePBR lighting evaluation overrides.
+// Overrides InitializeLightingData and FinalizeLightingData via #ifndef macros,
+// forwarding to BasePBR defaults. Modify these to customize lighting initialization
+// (e.g., change Fresnel response) or finalization (e.g., aggregate cel-shading bands).
+//
+// Include this file INSTEAD OF BasePBR_LightingEval.azsli.
+
+#pragma once
+
+// Override the lighting init/finalize macros BEFORE BasePBR_LightingEval defines them.
+#define InitializeLightingData InitializeLightingData_Custom
+#define FinalizeLightingData FinalizeLightingData_Custom
+
+// Include BasePBR LightingEval — defines InitializeLightingData_BasePBR,
+// FinalizeLightingData_BasePBR, and includes Lights.azsli.
+#include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_LightingEval.azsli>
+
+// ---------------------------------------------------------------------------
+// Custom lighting initialization.
+// Currently forwards to the engine's BasePBR implementation (Fresnel response,
+// multiscatter compensation, BRDF map sampling).
+// Modify this to change how lighting data is set up before lights are applied.
+// ---------------------------------------------------------------------------
+void InitializeLightingData_Custom(Surface surface, float3 viewPositions[MAX_SHADING_VIEWS], inout LightingData lightingData)
+{
+    InitializeLightingData_BasePBR(surface, viewPositions, lightingData);
+}
+
+// ---------------------------------------------------------------------------
+// Custom lighting finalization.
+// Currently forwards to the engine's BasePBR implementation (AO, final cleanup).
+// Modify this to post-process the aggregate lighting result — e.g., quantize
+// diffuse/specular into cel-shading bands, apply color ramps, etc.
+// ---------------------------------------------------------------------------
+void FinalizeLightingData_Custom(Surface surface, inout LightingData lightingData)
+{
+    FinalizeLightingData_BasePBR(surface, lightingData);
+}

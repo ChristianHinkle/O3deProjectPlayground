@@ -28,8 +28,8 @@
     // --- Custom LightUtil overrides (empty stub, ready for per-light-type customization) ---
     #include "CustomBasePBR_LightUtils.azsli"
 
-    // --- BasePBR lighting evaluation (includes Lights.azsli, uses our BRDF overrides) ---
-    #include <Atom/Feature/Common/Assets/Shaders/Materials/BasePBR/BasePBR_LightingEval.azsli>
+    // --- Custom lighting evaluation (overrides InitializeLightingData/FinalizeLightingData, includes Lights.azsli) ---
+    #include "CustomBasePBR_LightingEval.azsli"
 
 #else
 

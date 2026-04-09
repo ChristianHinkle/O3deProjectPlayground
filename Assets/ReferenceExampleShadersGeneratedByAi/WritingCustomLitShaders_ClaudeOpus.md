@@ -928,6 +928,8 @@ float specBand = step(specularThreshold, specLuminance);
 { "$import": "@gemroot:Atom_Feature_Common@/Assets/Materials/Types/MaterialInputs/BaseColorPropertyGroup.json" }
 ```
 
+**`InitializeLightingData` / `FinalizeLightingData` overrides (BasePBR only):** These functions also use `#ifndef` guards in `BasePBR_LightingEval.azsli`. Override them to customize lighting setup (Fresnel response, multiscatter compensation) or to post-process the aggregate lighting result. `FinalizeLightingData` runs after all lights are accumulated and before the framework assembles the output — making it the natural place for aggregate stylization in BasePBR materials (the equivalent of modifying the pixel shader output in MinimalPBR). See `CustomBasePBR_LightingEval.azsli` for the forwarding setup.
+
 #### Aggregate Output Stylization (Recommended for NPR)
 
 For NPR styles like cel-shading, let the engine compute standard PBR lighting (all light types, shadows, IBL), then stylize the aggregate result at the output stage. This is what `FullPipeline_CustomLighting_MinimalPBR_SimpleCelShaded_ClaudeOpus` does — no BRDF or LightUtil overrides, just aggregate banding:
