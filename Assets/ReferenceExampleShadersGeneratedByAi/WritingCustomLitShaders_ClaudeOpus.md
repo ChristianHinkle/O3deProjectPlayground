@@ -824,6 +824,39 @@ The sweet spot depends on how much control your art direction needs. For most NP
 
 Two techniques for overriding the engine's lighting calculations, in order of preference:
 
+#### Choosing a Base: MinimalPBR vs BasePBR vs StandardPBR
+
+Before picking an override technique, decide which "base" setup matches your needs. There's a fundamental architectural difference between MinimalPBR and BasePBR/StandardPBR:
+
+**MinimalPBR** is fully hand-written. You author the `.azsl` (complete forward pass shader with vertex shader, pixel shader, MaterialSrg, output assembly) and `.shader` files yourself. The materialtype lists which shader files to use explicitly. Total control, but you only get the passes you write — depth and shadow passes use the engine's standard shaders.
+
+**BasePBR / StandardPBR** use the **material pipeline** framework. The materialtype declares `"lightingModel": "Base"` (or `"Standard"`) and points to `.azsli` files via `materialShaderDefines` and `materialShaderCode`. The pipeline auto-generates everything else: forward pass shaders (for `mainpipeline` and `lowendpipeline`), depth pass, shadow map pass, mesh motion vector pass — all per-platform. Your `.azsli` files are pulled into those generated shaders via `MATERIAL_TYPE_DEFINES_AZSLI_FILE_PATH` and `MATERIAL_TYPE_AZSLI_FILE_PATH` macros. The MaterialSrg is also auto-generated from the property groups in the materialtype JSON.
+
+The result: a CustomBasePBR or CustomStandardPBR directory contains only `.azsli` files, a `.materialtype`, and a `.material` — no `.azsl` or `.shader` files at all. The cache produces 10+ generated shader files automatically.
+
+| | MinimalPBR | BasePBR | StandardPBR |
+|---|---|---|---|
+| **You write** | `.azsl`, `.shader`, `.azsli`, `.materialtype`, `.material` | `.azsli` only, `.materialtype`, `.material` | `.azsli` only, `.materialtype`, `.material` |
+| **Auto-generated** | None | Forward, depth, shadow, motion vector (multi-pipeline) | Same as BasePBR |
+| **Property declaration** | Manual MaterialSrg in `.azsl` | Property groups in `.materialtype` JSON | Property groups in `.materialtype` JSON |
+| **Texture map support** | Manual (declare textures, sample in PS) | Built-in (BaseColor, Normal, Metallic, Roughness, Specular maps) | Same as BasePBR + Occlusion, Emissive, Parallax/heightmap, ClearCoat |
+| **Vertex colors / UV transforms** | Manual | Built-in | Built-in |
+| **Multi-pipeline support** | Only what you write | Automatic (mainpipeline + lowendpipeline) | Automatic (mainpipeline + lowendpipeline) |
+| **Shading model features** | Whatever you write | Lambert diffuse + GGX specular + IBL | Same as BasePBR + ClearCoat layer + Parallax + Emissive + Occlusion + Opacity/Cutout |
+| **Transparency / alpha blending** | Yes (write your own blend state in `.shader`, output alpha, use a transparent draw list) | Not built-in. The `Base` lighting model only has opaque pipeline templates — no `Transparent_BaseLighting` exists. Adding transparency requires switching to the `Standard` lighting model or significant pipeline customization. | Built-in via `OpacityPropertyGroup` (Opaque, Cutout, Blended, TintedTransparent). The pipeline auto-generates separate `Transparent_StandardLighting` and `TintedTransparent_StandardLighting` shader variants. |
+| **Property count** | Custom | 10 property groups + custom | 15 property groups + custom |
+| **Performance cost** | Lowest potential — pay only for what you write. A simple cel shader skips most PBR math. Can also be expensive if you write expensive code. | Middle — full PBR per pixel: texture sampling + Fresnel + GGX specular + IBL. No clear coat, parallax, occlusion, or transparency overhead. | Highest potential — adds clear coat (extra Fresnel + specular pass), parallax (heightmap raymarching, can be very expensive), emissive sampling, occlusion sampling, and transparency overhead on top of BasePBR. Many features are gated by shader options, so cost approaches BasePBR when those are disabled. |
+| **Hand-written code** | ~120 lines (.azsl) | ~40 lines (.azsli) | ~80 lines (.azsli, more callbacks) |
+| **Best for** | NPR, stylized shading, learning, simple unlit materials, full control over the shader | "PBR with a twist" — production materials with the standard texture-based PBR workflow plus custom shading | Full-featured PBR with advanced features (clear coat cars, parallax bricks, emissive surfaces, transparent objects) |
+
+**When to use each:**
+
+- **MinimalPBR (BrdfOverride or LightUtilOverride)**: Cel shading, hatching, flat shading, NPR, holograms, pure unlit materials, learning the lighting pipeline. The shading model is fundamentally different from PBR. You can still add texture maps by declaring them in your MaterialSrg and sampling them in the pixel shader.
+- **CustomBasePBR**: You want a material that looks mostly like PBR (with proper textures, normal maps, metallic/roughness workflow) but with a custom diffuse or specular calculation. The texture-based PBR workflow matters.
+- **CustomStandardPBR**: Same as BasePBR but you also need clear coat (car paint), parallax (brick walls), emissive maps, occlusion maps, or opacity/cutout transparency. Use this when you want the most feature-complete PBR base.
+
+**Key tradeoff:** the lighting model approach (BasePBR/StandardPBR) gives you more for free but constrains you to the framework's structure. The MinimalPBR approach is more boilerplate but lets you write any shader you want.
+
 #### BRDF Override (Recommended)
 
 **Directories:** `CustomMinimalPBR_BrdfOverride_ClaudeOpus` (MinimalPBR), `CustomBasePBR_ClaudeOpus` (BasePBR), `CustomStandardPBR_ClaudeOpus` (StandardPBR)
