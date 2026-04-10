@@ -13,3 +13,9 @@
 [submodule "Deps/o3dimport"]
 	path = Deps/o3dimport
 	url = https://github.com/galibzon/o3dimport.git
+[submodule "Deps/AtomUtils_Core"]
+	path = Deps/AtomUtils_Core
+	url = https://github.com/ChristianHinkle/AtomUtils_Core.git
+[submodule "Deps/AtomFramework_Misc"]
+	path = Deps/AtomFramework_Misc
+	url = https://github.com/ChristianHinkle/AtomFramework_Misc.git

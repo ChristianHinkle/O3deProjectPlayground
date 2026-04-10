@@ -15,6 +15,8 @@
     "icon_path": "preview.png",
     "engine": "o3de",
     "external_subdirectories": [
+        "Deps/AtomFramework_Misc",
+        "Deps/AtomUtils_Core",
         "Deps/CppUtilsO3deGem",
         "Deps/O3deGemPlayground",
         "Deps/O3deUtils_Core",
@@ -25,6 +27,8 @@
     "restricted": "O3deProjectPlayground",
     "gem_names": [
         "Atom",
+        "AtomFramework_Misc",
+        "AtomUtils_Core",
         "AudioSystem",
         "CameraFramework",
         "CppUtils",
