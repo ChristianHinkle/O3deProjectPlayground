@@ -88,7 +88,7 @@ ForwardPassOutput MainPS(VSOutput IN)
     surface.CalculateRoughnessA();
     surface.SetAlbedoAndSpecularF0(MaterialSrg::m_baseColor, 0.5, MaterialSrg::m_metallic);  // specularF0Factor=0.5 (standard dielectric reflectance)
     surface.clearCoat.InitializeToZero();
-    surface.lightingChannels = 0xFFFFFFFF; // Receive light from all channels
+    surface.lightingChannels = ObjectSrg::m_lightingChannelMask; // Copy per-mesh lighting channel mask from the object
 
     // --- Light culling ---
     LightCullingTileIterator tileIterator;
