@@ -1,0 +1,19 @@
+{
+    "materialType": "@gemroot:AtomFramework_Misc@/Assets/Shaders/SimpleCelShadedMaterial_FixedColor/SimpleCelShadedMaterial_FixedColor.materialtype",
+    "materialTypeVersion": 1,
+    "propertyValues": {
+        "settings.litColor": [
+            0.26274511218070984,
+            0.6941176652908325,
+            0.7450980544090271,
+            1.0
+        ],
+        "settings.roughness": 0.10000000149011612,
+        "settings.unlitColor": [
+            0.040527962148189545,
+            0.40297549962997437,
+            0.4587167203426361,
+            1.0
+        ]
+    }
+}
